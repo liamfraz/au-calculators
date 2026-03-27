@@ -1,7 +1,7 @@
 "use client";
-import Link from "next/link";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   AreaChart,
   Area,
@@ -20,6 +20,7 @@ interface Inputs {
   interestRate: number;
   loanTerm: number;
   frequency: Frequency;
+  balloonPayment: number;
 }
 
 interface AmortizationRow {
@@ -35,6 +36,7 @@ interface CalcResult {
   totalInterest: number;
   totalPaid: number;
   schedule: AmortizationRow[];
+  effectiveLoanAmount: number;
 }
 
 const FREQUENCY_LABELS: Record<Frequency, string> = {
@@ -49,32 +51,45 @@ const PERIODS_PER_YEAR: Record<Frequency, number> = {
   monthly: 12,
 };
 
-function calculateMortgage(inputs: Inputs): CalcResult {
-  const { loanAmount, interestRate, loanTerm, frequency } = inputs;
+function calculateCarLoan(inputs: Inputs): CalcResult {
+  const { loanAmount, interestRate, loanTerm, frequency, balloonPayment } = inputs;
   const periodsPerYear = PERIODS_PER_YEAR[frequency];
   const totalPeriods = loanTerm * periodsPerYear;
   const periodicRate = interestRate / 100 / periodsPerYear;
+  const balloon = Math.min(balloonPayment, loanAmount);
 
   if (periodicRate === 0) {
-    const repayment = loanAmount / totalPeriods;
+    const effectiveAmount = loanAmount - balloon;
+    const repayment = effectiveAmount / totalPeriods;
     const schedule: AmortizationRow[] = [];
     let balance = loanAmount;
     for (let i = 1; i <= totalPeriods; i++) {
-      balance -= repayment;
+      const principalPayment = i === totalPeriods ? balance - balloon : repayment;
+      balance -= principalPayment;
       schedule.push({
         period: i,
-        payment: repayment,
-        principal: repayment,
+        payment: i === totalPeriods ? repayment + balloon : repayment,
+        principal: principalPayment,
         interest: 0,
         balance: Math.max(0, balance),
       });
     }
-    return { repayment, totalInterest: 0, totalPaid: loanAmount, schedule };
+    return {
+      repayment,
+      totalInterest: 0,
+      totalPaid: loanAmount,
+      schedule,
+      effectiveLoanAmount: effectiveAmount,
+    };
   }
 
+  // Car loan with balloon payment formula:
+  // PMT = [PV - BV / (1+r)^n] * r * (1+r)^n / [(1+r)^n - 1]
+  const compoundFactor = Math.pow(1 + periodicRate, totalPeriods);
+  const presentValueBalloon = balloon / compoundFactor;
+  const adjustedPrincipal = loanAmount - presentValueBalloon;
   const repayment =
-    (loanAmount * (periodicRate * Math.pow(1 + periodicRate, totalPeriods))) /
-    (Math.pow(1 + periodicRate, totalPeriods) - 1);
+    (adjustedPrincipal * periodicRate * compoundFactor) / (compoundFactor - 1);
 
   const schedule: AmortizationRow[] = [];
   let balance = loanAmount;
@@ -83,19 +98,37 @@ function calculateMortgage(inputs: Inputs): CalcResult {
     const interestPayment = balance * periodicRate;
     const principalPayment = repayment - interestPayment;
     balance -= principalPayment;
-    schedule.push({
-      period: i,
-      payment: repayment,
-      principal: principalPayment,
-      interest: interestPayment,
-      balance: Math.max(0, balance),
-    });
+
+    if (i === totalPeriods) {
+      schedule.push({
+        period: i,
+        payment: repayment + balloon,
+        principal: principalPayment + balloon,
+        interest: interestPayment,
+        balance: 0,
+      });
+    } else {
+      schedule.push({
+        period: i,
+        payment: repayment,
+        principal: principalPayment,
+        interest: interestPayment,
+        balance: Math.max(0, balance),
+      });
+    }
   }
 
-  const totalPaid = repayment * totalPeriods;
+  const totalRegularPayments = repayment * totalPeriods;
+  const totalPaid = totalRegularPayments + balloon;
   const totalInterest = totalPaid - loanAmount;
 
-  return { repayment, totalInterest, totalPaid, schedule };
+  return {
+    repayment,
+    totalInterest,
+    totalPaid,
+    schedule,
+    effectiveLoanAmount: adjustedPrincipal,
+  };
 }
 
 function formatCurrency(value: number): string {
@@ -137,7 +170,7 @@ function InputPanel({
           onChange={(e) => onChange({ ...inputs, loanAmount: Number(e.target.value) })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           min={0}
-          step={10000}
+          step={1000}
         />
       </div>
 
@@ -156,15 +189,17 @@ function InputPanel({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (years)</label>
-        <input
-          type="number"
+        <select
           value={inputs.loanTerm}
           onChange={(e) => onChange({ ...inputs, loanTerm: Number(e.target.value) })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          min={1}
-          max={40}
-          step={1}
-        />
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+        >
+          {[1, 2, 3, 4, 5, 6, 7].map((y) => (
+            <option key={y} value={y}>
+              {y} {y === 1 ? "year" : "years"}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -181,6 +216,24 @@ function InputPanel({
           ))}
         </select>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Balloon Payment ($)
+          <span className="font-normal text-gray-400 ml-1">optional</span>
+        </label>
+        <input
+          type="number"
+          value={inputs.balloonPayment}
+          onChange={(e) => onChange({ ...inputs, balloonPayment: Number(e.target.value) })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          min={0}
+          step={1000}
+        />
+        <p className="text-xs text-gray-400 mt-1">
+          A lump sum due at the end of the loan term. Reduces regular repayments but increases total interest.
+        </p>
+      </div>
     </div>
   );
 }
@@ -195,26 +248,28 @@ function ResultCard({ label, value, subtext }: { label: string; value: string; s
   );
 }
 
-export default function MortgageCalculator() {
+export default function CarLoanCalculator() {
   const [inputs, setInputs] = useState<Inputs>({
-    loanAmount: 500000,
-    interestRate: 6.5,
-    loanTerm: 30,
+    loanAmount: 30000,
+    interestRate: 7,
+    loanTerm: 5,
     frequency: "monthly",
+    balloonPayment: 0,
   });
 
   const [compareMode, setCompareMode] = useState(false);
   const [inputs2, setInputs2] = useState<Inputs>({
-    loanAmount: 500000,
+    loanAmount: 30000,
     interestRate: 5.5,
-    loanTerm: 30,
+    loanTerm: 5,
     frequency: "monthly",
+    balloonPayment: 0,
   });
 
   const [showSchedule, setShowSchedule] = useState(false);
 
-  const result = useMemo(() => calculateMortgage(inputs), [inputs]);
-  const result2 = useMemo(() => (compareMode ? calculateMortgage(inputs2) : null), [compareMode, inputs2]);
+  const result = useMemo(() => calculateCarLoan(inputs), [inputs]);
+  const result2 = useMemo(() => (compareMode ? calculateCarLoan(inputs2) : null), [compareMode, inputs2]);
 
   const chartData = useMemo(() => {
     const periodsPerYear = PERIODS_PER_YEAR[inputs.frequency];
@@ -247,7 +302,6 @@ export default function MortgageCalculator() {
   }, [result, result2, inputs.frequency, inputs.loanTerm, inputs2.frequency]);
 
   const schedulePage = useMemo(() => {
-    // Show yearly summary for the amortization table
     const periodsPerYear = PERIODS_PER_YEAR[inputs.frequency];
     const yearly: { year: number; totalPayment: number; totalPrincipal: number; totalInterest: number; endBalance: number }[] = [];
 
@@ -290,26 +344,40 @@ export default function MortgageCalculator() {
       <div className={`grid gap-6 ${compareMode ? "md:grid-cols-2" : ""}`}>
         <div>
           {compareMode && <h3 className="font-semibold text-gray-700 mb-3">Scenario A</h3>}
-          <div className="grid grid-cols-3 gap-3">
+          <div className={`grid gap-3 ${inputs.balloonPayment > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
             <ResultCard
               label={`${FREQUENCY_LABELS[inputs.frequency]} Repayment`}
               value={formatCurrencyExact(result.repayment)}
             />
             <ResultCard label="Total Interest" value={formatCurrency(result.totalInterest)} />
-            <ResultCard label="Total Amount Paid" value={formatCurrency(result.totalPaid)} />
+            <ResultCard label="Total Cost" value={formatCurrency(result.totalPaid)} />
+            {inputs.balloonPayment > 0 && (
+              <ResultCard
+                label="Balloon Due"
+                value={formatCurrency(inputs.balloonPayment)}
+                subtext="Lump sum at end of term"
+              />
+            )}
           </div>
         </div>
 
         {compareMode && result2 && (
           <div>
             <h3 className="font-semibold text-gray-700 mb-3">Scenario B</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid gap-3 ${inputs2.balloonPayment > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
               <ResultCard
                 label={`${FREQUENCY_LABELS[inputs2.frequency]} Repayment`}
                 value={formatCurrencyExact(result2.repayment)}
               />
               <ResultCard label="Total Interest" value={formatCurrency(result2.totalInterest)} />
-              <ResultCard label="Total Amount Paid" value={formatCurrency(result2.totalPaid)} />
+              <ResultCard label="Total Cost" value={formatCurrency(result2.totalPaid)} />
+              {inputs2.balloonPayment > 0 && (
+                <ResultCard
+                  label="Balloon Due"
+                  value={formatCurrency(inputs2.balloonPayment)}
+                  subtext="Lump sum at end of term"
+                />
+              )}
             </div>
           </div>
         )}
@@ -384,6 +452,26 @@ export default function MortgageCalculator() {
         </div>
       </div>
 
+      {/* Comparison Rate Explanation */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <h3 className="font-semibold text-amber-900 mb-2">Understanding Comparison Rates</h3>
+        <p className="text-sm text-amber-800 leading-relaxed mb-3">
+          In Australia, lenders are legally required to display a <strong>comparison rate</strong> alongside
+          the advertised interest rate. The comparison rate includes the interest rate plus most fees and
+          charges, giving you a more accurate picture of the true cost of a loan.
+        </p>
+        <p className="text-sm text-amber-800 leading-relaxed mb-3">
+          For car loans, the comparison rate is calculated on a $30,000 secured loan over 5 years. It
+          includes establishment fees, monthly account-keeping fees, and other standard charges. A loan
+          advertised at 6.99% might have a comparison rate of 7.5% or higher once fees are factored in.
+        </p>
+        <p className="text-sm text-amber-800 leading-relaxed">
+          Always compare loans using the comparison rate, not just the headline interest rate. This
+          calculator shows repayments based on the interest rate you enter — for the most accurate
+          estimate, use the comparison rate from your lender&apos;s Product Disclosure Statement.
+        </p>
+      </div>
+
       {/* Amortization Schedule */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
@@ -422,37 +510,49 @@ export default function MortgageCalculator() {
         )}
       </div>
 
-      {/* Related Calculators */}
-      <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-        <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Internal Links */}
+      <div className="bg-gray-50 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-800 mb-3">Related Calculators</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
           <Link
-            href="/calculators/stamp-duty"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+            href="/calculators/mortgage-repayment"
+            className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
           >
-            <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
+            <span className="text-xl">🏠</span>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">Mortgage Calculator</p>
+              <p className="text-xs text-gray-500">Calculate home loan repayments</p>
+            </div>
           </Link>
           <Link
             href="/calculators/super"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+            className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
           >
-            <span className="text-blue-600 font-medium">Superannuation Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/calculators/car-loan"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Car Loan Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
+            <span className="text-xl">📈</span>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">Super Calculator</p>
+              <p className="text-xs text-gray-500">Project your retirement balance</p>
+            </div>
           </Link>
           <Link
             href="/calculators/hecs-help"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+            className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
           >
-            <span className="text-blue-600 font-medium">HECS-HELP Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
+            <span className="text-xl">🎓</span>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">HECS-HELP Calculator</p>
+              <p className="text-xs text-gray-500">Student loan repayment estimates</p>
+            </div>
+          </Link>
+          <Link
+            href="/calculators/energy-bill"
+            className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+          >
+            <span className="text-xl">⚡</span>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">Energy Bill Calculator</p>
+              <p className="text-xs text-gray-500">Estimate electricity and gas costs</p>
+            </div>
           </Link>
         </div>
       </div>
