@@ -1,7 +1,17 @@
 import type { MetadataRoute } from "next";
+import { SUBURBS as MORTGAGE_RATE_SUBURBS } from "./mortgage-rates/suburbs";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://au-calculators.vercel.app";
+
+  const mortgageRatePages: MetadataRoute.Sitemap = MORTGAGE_RATE_SUBURBS.map(
+    (s) => ({
+      url: `${baseUrl}/mortgage-rates/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })
+  );
 
   return [
     {
@@ -154,5 +164,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/negative-gearing-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/calculators/first-home-buyer`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/mortgage-rates`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    ...mortgageRatePages,
   ];
 }
