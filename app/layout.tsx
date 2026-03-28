@@ -119,6 +119,12 @@ export default function RootLayout({
                 CGT
               </Link>
               <Link
+                href="/calculators/gst"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                GST
+              </Link>
+              <Link
                 href="/calculators/compound-interest"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
