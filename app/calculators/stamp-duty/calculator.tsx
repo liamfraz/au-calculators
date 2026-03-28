@@ -239,9 +239,9 @@ const FHB_NOTES: Record<StateCode, string> = {
 
 // --- Component ---
 
-export default function StampDutyCalculator({ initialState = "NSW" }: { initialState?: StateCode } = {}) {
+export default function StampDutyCalculator({ initialState = "NSW", defaultPropertyValue = 500000 }: { initialState?: StateCode; defaultPropertyValue?: number } = {}) {
   const [state, setState] = useState<StateCode>(initialState);
-  const [propertyValue, setPropertyValue] = useState(500000);
+  const [propertyValue, setPropertyValue] = useState(defaultPropertyValue);
   const [propertyType, setPropertyType] = useState<PropertyType>("primary");
   const [firstHomeBuyer, setFirstHomeBuyer] = useState(false);
   const [foreignBuyer, setForeignBuyer] = useState(false);
