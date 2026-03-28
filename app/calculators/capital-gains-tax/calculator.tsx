@@ -2,13 +2,43 @@
 
 import { useState } from "react";
 
+type EntityType = "individual" | "company" | "smsf" | "trust";
+type TaxInputMode = "income" | "rate";
+
 const TAX_BRACKETS_2025_26 = [
   { min: 0, max: 18200, rate: 0 },
   { min: 18201, max: 45000, rate: 0.16 },
-  { min: 45001, max: 135000, rate: 0.30 },
+  { min: 45001, max: 135000, rate: 0.3 },
   { min: 135001, max: 190000, rate: 0.37 },
   { min: 190001, max: Infinity, rate: 0.45 },
 ];
+
+const COMMON_RATES = [
+  { label: "0% ($0 – $18,200)", value: 0 },
+  { label: "16% ($18,201 – $45,000)", value: 0.16 },
+  { label: "30% ($45,001 – $135,000)", value: 0.3 },
+  { label: "37% ($135,001 – $190,000)", value: 0.37 },
+  { label: "45% ($190,001+)", value: 0.45 },
+];
+
+const ENTITY_INFO: Record<EntityType, { label: string; discountPct: number; discountLabel: string }> = {
+  individual: { label: "Individual", discountPct: 50, discountLabel: "50% CGT discount" },
+  company: { label: "Company", discountPct: 0, discountLabel: "No CGT discount" },
+  smsf: { label: "Self-Managed Super Fund (SMSF)", discountPct: 33.33, discountLabel: "33⅓% CGT discount" },
+  trust: { label: "Trust", discountPct: 50, discountLabel: "50% CGT discount (distributed to individuals)" },
+};
+
+function calculateTaxOnAmount(taxableIncome: number): number {
+  let tax = 0;
+  let remaining = taxableIncome;
+  for (const bracket of TAX_BRACKETS_2025_26) {
+    if (remaining <= 0) break;
+    const taxableInBracket = Math.min(remaining, bracket.max - bracket.min + 1);
+    tax += taxableInBracket * bracket.rate;
+    remaining -= taxableInBracket;
+  }
+  return tax;
+}
 
 function calculateMarginalRate(taxableIncome: number): number {
   for (let i = TAX_BRACKETS_2025_26.length - 1; i >= 0; i--) {
@@ -19,26 +49,10 @@ function calculateMarginalRate(taxableIncome: number): number {
   return 0;
 }
 
-function calculateTaxOnAmount(taxableIncome: number): number {
-  let tax = 0;
-  for (const bracket of TAX_BRACKETS_2025_26) {
-    if (taxableIncome <= 0) break;
-    const taxableInBracket = Math.min(
-      taxableIncome,
-      bracket.max - bracket.min + 1
-    );
-    tax += taxableInBracket * bracket.rate;
-    taxableIncome -= taxableInBracket;
-  }
-  return tax;
-}
-
 function monthsBetween(start: string, end: string): number {
   const s = new Date(start);
   const e = new Date(end);
-  return (
-    (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth())
-  );
+  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
 }
 
 function formatCurrency(value: number): string {
@@ -54,13 +68,17 @@ interface Results {
   capitalGain: number;
   heldMonths: number;
   discountEligible: boolean;
+  discountPct: number;
   discountAmount: number;
   taxableGain: number;
   marginalRate: number;
   estimatedTax: number;
+  effectiveCgtRate: number;
+  entityType: EntityType;
+  isLoss: boolean;
+  taxInputMode: TaxInputMode;
   taxWithoutGain: number;
   taxWithGain: number;
-  effectiveCgtRate: number;
 }
 
 export default function CapitalGainsTaxCalculator() {
@@ -69,65 +87,93 @@ export default function CapitalGainsTaxCalculator() {
   const [salePrice, setSalePrice] = useState("");
   const [saleDate, setSaleDate] = useState("");
   const [capitalCosts, setCapitalCosts] = useState("");
+  const [entityType, setEntityType] = useState<EntityType>("individual");
+  const [taxInputMode, setTaxInputMode] = useState<TaxInputMode>("rate");
   const [taxableIncome, setTaxableIncome] = useState("");
+  const [selectedRate, setSelectedRate] = useState("0.37");
   const [results, setResults] = useState<Results | null>(null);
 
   function calculate() {
     const purchase = parseFloat(purchasePrice) || 0;
     const sale = parseFloat(salePrice) || 0;
     const costs = parseFloat(capitalCosts) || 0;
-    const income = parseFloat(taxableIncome) || 0;
 
     if (!purchase || !sale || !purchaseDate || !saleDate) return;
 
     const capitalGain = sale - purchase - costs;
+    const heldMonths = monthsBetween(purchaseDate, saleDate);
+    const discountEligible = heldMonths >= 12 && entityType !== "company";
+    const discountPct = discountEligible ? ENTITY_INFO[entityType].discountPct : 0;
+
     if (capitalGain <= 0) {
       setResults({
         capitalGain,
-        heldMonths: monthsBetween(purchaseDate, saleDate),
+        heldMonths,
         discountEligible: false,
+        discountPct: 0,
         discountAmount: 0,
         taxableGain: 0,
-        marginalRate: calculateMarginalRate(income),
+        marginalRate: 0,
         estimatedTax: 0,
-        taxWithoutGain: calculateTaxOnAmount(income),
-        taxWithGain: calculateTaxOnAmount(income),
         effectiveCgtRate: 0,
+        entityType,
+        isLoss: capitalGain < 0,
+        taxInputMode,
+        taxWithoutGain: 0,
+        taxWithGain: 0,
       });
       return;
     }
 
-    const heldMonths = monthsBetween(purchaseDate, saleDate);
-    const discountEligible = heldMonths >= 12;
-    const discountAmount = discountEligible ? capitalGain * 0.5 : 0;
+    const discountAmount = capitalGain * (discountPct / 100);
     const taxableGain = capitalGain - discountAmount;
 
-    const taxWithoutGain = calculateTaxOnAmount(income);
-    const taxWithGain = calculateTaxOnAmount(income + taxableGain);
-    const estimatedTax = taxWithGain - taxWithoutGain;
-    const marginalRate = calculateMarginalRate(income + taxableGain);
+    let estimatedTax: number;
+    let marginalRate: number;
+    let taxWithoutGain = 0;
+    let taxWithGain = 0;
+
+    if (entityType === "company") {
+      marginalRate = 0.25;
+      estimatedTax = taxableGain * 0.25;
+    } else if (entityType === "smsf") {
+      marginalRate = 0.15;
+      estimatedTax = taxableGain * 0.15;
+    } else if (taxInputMode === "rate") {
+      marginalRate = parseFloat(selectedRate);
+      estimatedTax = taxableGain * marginalRate;
+    } else {
+      const income = parseFloat(taxableIncome) || 0;
+      taxWithoutGain = calculateTaxOnAmount(income);
+      taxWithGain = calculateTaxOnAmount(income + taxableGain);
+      estimatedTax = taxWithGain - taxWithoutGain;
+      marginalRate = calculateMarginalRate(income + taxableGain);
+    }
+
     const effectiveCgtRate = capitalGain > 0 ? (estimatedTax / capitalGain) * 100 : 0;
 
     setResults({
       capitalGain,
       heldMonths,
       discountEligible,
+      discountPct,
       discountAmount,
       taxableGain,
       marginalRate,
       estimatedTax,
+      effectiveCgtRate,
+      entityType,
+      isLoss: false,
+      taxInputMode,
       taxWithoutGain,
       taxWithGain,
-      effectiveCgtRate,
     });
   }
 
   return (
     <div>
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Asset Details
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Asset Details</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div>
@@ -178,38 +224,117 @@ export default function CapitalGainsTaxCalculator() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Capital Costs ($)
-              <span className="text-gray-400 font-normal ml-1">
-                e.g. agent fees, legal, renovations
-              </span>
-            </label>
-            <input
-              type="number"
-              value={capitalCosts}
-              onChange={(e) => setCapitalCosts(e.target.value)}
-              placeholder="0"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Your Taxable Income ($)
-              <span className="text-gray-400 font-normal ml-1">
-                excluding this gain
-              </span>
-            </label>
-            <input
-              type="number"
-              value={taxableIncome}
-              onChange={(e) => setTaxableIncome(e.target.value)}
-              placeholder="e.g. 90000"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Capital Costs ($)
+            <span className="text-gray-400 font-normal ml-1">
+              improvements, agent fees, legal, stamp duty on purchase
+            </span>
+          </label>
+          <input
+            type="number"
+            value={capitalCosts}
+            onChange={(e) => setCapitalCosts(e.target.value)}
+            placeholder="0"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
+
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Tax Details</h2>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Entity Type
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(Object.keys(ENTITY_INFO) as EntityType[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setEntityType(key)}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  entityType === key
+                    ? "bg-blue-700 text-white border-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                {ENTITY_INFO[key].label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {ENTITY_INFO[entityType].discountLabel}
+            {entityType === "company" && " — taxed at flat 25% company rate"}
+            {entityType === "smsf" && " — taxed at flat 15% super rate"}
+          </p>
+        </div>
+
+        {entityType !== "company" && entityType !== "smsf" && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              How would you like to estimate your tax?
+            </label>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setTaxInputMode("rate")}
+                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  taxInputMode === "rate"
+                    ? "bg-blue-700 text-white border-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                Select marginal rate
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaxInputMode("income")}
+                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  taxInputMode === "income"
+                    ? "bg-blue-700 text-white border-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                Enter taxable income
+              </button>
+            </div>
+
+            {taxInputMode === "rate" ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Marginal Tax Rate
+                </label>
+                <select
+                  value={selectedRate}
+                  onChange={(e) => setSelectedRate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {COMMON_RATES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Taxable Income ($)
+                  <span className="text-gray-400 font-normal ml-1">
+                    excluding this capital gain
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={taxableIncome}
+                  onChange={(e) => setTaxableIncome(e.target.value)}
+                  placeholder="e.g. 90000"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={calculate}
@@ -221,171 +346,276 @@ export default function CapitalGainsTaxCalculator() {
 
       {results && (
         <div className="mt-6 space-y-4">
-          {/* Summary card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-4">
-              Capital Gains Tax Summary
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-blue-600 uppercase tracking-wide">
-                  Capital Gain
+          {/* Capital loss notice */}
+          {results.isLoss && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-red-900 mb-2">
+                Capital Loss: {formatCurrency(Math.abs(results.capitalGain))}
+              </h3>
+              <div className="text-sm text-red-800 space-y-2">
+                <p>
+                  You have made a <strong>capital loss</strong> on this asset. Capital losses
+                  cannot be claimed as a tax deduction against other income (like salary or
+                  wages), but they <strong>can be used to offset capital gains</strong> in the
+                  same financial year or carried forward to offset future capital gains.
                 </p>
-                <p className="text-xl font-bold text-blue-900">
-                  {formatCurrency(results.capitalGain)}
+                <p>
+                  <strong>Carry forward rules:</strong> There is no time limit on carrying
+                  forward capital losses. You must apply losses against capital gains in the
+                  order they were incurred. You must report the loss in your tax return for the
+                  year it occurred, even though it may not reduce your tax in that year.
                 </p>
-              </div>
-              <div>
-                <p className="text-xs text-blue-600 uppercase tracking-wide">
-                  50% Discount
-                </p>
-                <p className="text-xl font-bold text-blue-900">
-                  {results.discountEligible ? formatCurrency(results.discountAmount) : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-blue-600 uppercase tracking-wide">
-                  Taxable Gain
-                </p>
-                <p className="text-xl font-bold text-blue-900">
-                  {formatCurrency(results.taxableGain)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-blue-600 uppercase tracking-wide">
-                  Estimated Tax
-                </p>
-                <p className="text-xl font-bold text-red-700">
-                  {formatCurrency(results.estimatedTax)}
+                <p>
+                  <strong>Important:</strong> Capital losses on personal-use assets (items
+                  costing $10,000 or less) and collectables cannot be offset against other
+                  capital gains — only against gains from the same type of asset.
                 </p>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Summary card */}
+          {!results.isLoss && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                Capital Gains Tax Summary
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">Capital Gain</p>
+                  <p className="text-xl font-bold text-blue-900">
+                    {formatCurrency(results.capitalGain)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">
+                    {results.discountPct > 0 ? `${results.discountPct}% Discount` : "Discount"}
+                  </p>
+                  <p className="text-xl font-bold text-blue-900">
+                    {results.discountEligible
+                      ? formatCurrency(results.discountAmount)
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">Net Taxable Gain</p>
+                  <p className="text-xl font-bold text-blue-900">
+                    {formatCurrency(results.taxableGain)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">Estimated Tax</p>
+                  <p className="text-xl font-bold text-red-700">
+                    {formatCurrency(results.estimatedTax)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Detailed breakdown */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Detailed Breakdown
-            </h3>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-100">
-                <tr>
-                  <td className="py-2 text-gray-600">Sale Price</td>
-                  <td className="py-2 text-right font-medium">{formatCurrency(parseFloat(salePrice) || 0)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Less: Purchase Price</td>
-                  <td className="py-2 text-right font-medium">−{formatCurrency(parseFloat(purchasePrice) || 0)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Less: Capital Costs</td>
-                  <td className="py-2 text-right font-medium">−{formatCurrency(parseFloat(capitalCosts) || 0)}</td>
-                </tr>
-                <tr className="font-semibold">
-                  <td className="py-2 text-gray-900">Capital Gain</td>
-                  <td className="py-2 text-right">{formatCurrency(results.capitalGain)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">
-                    Holding Period
-                  </td>
-                  <td className="py-2 text-right font-medium">
-                    {results.heldMonths} months
-                    {results.discountEligible && (
-                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        Discount eligible
-                      </span>
-                    )}
-                    {!results.discountEligible && results.capitalGain > 0 && (
-                      <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                        No discount (&lt;12 months)
-                      </span>
-                    )}
-                  </td>
-                </tr>
-                {results.discountEligible && (
+          {!results.isLoss && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Breakdown</h3>
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-gray-100">
                   <tr>
-                    <td className="py-2 text-gray-600">Less: 50% CGT Discount</td>
-                    <td className="py-2 text-right font-medium text-green-700">
-                      −{formatCurrency(results.discountAmount)}
+                    <td className="py-2 text-gray-600">Sale Price</td>
+                    <td className="py-2 text-right font-medium">
+                      {formatCurrency(parseFloat(salePrice) || 0)}
                     </td>
                   </tr>
-                )}
-                <tr className="font-semibold">
-                  <td className="py-2 text-gray-900">Net Taxable Capital Gain</td>
-                  <td className="py-2 text-right">{formatCurrency(results.taxableGain)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Your Marginal Tax Rate</td>
-                  <td className="py-2 text-right font-medium">{(results.marginalRate * 100).toFixed(0)}%</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Tax on Income (without gain)</td>
-                  <td className="py-2 text-right font-medium">{formatCurrency(results.taxWithoutGain)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Tax on Income (with gain)</td>
-                  <td className="py-2 text-right font-medium">{formatCurrency(results.taxWithGain)}</td>
-                </tr>
-                <tr className="font-semibold text-red-700">
-                  <td className="py-2">Estimated CGT Payable</td>
-                  <td className="py-2 text-right">{formatCurrency(results.estimatedTax)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-gray-600">Effective CGT Rate</td>
-                  <td className="py-2 text-right font-medium">{results.effectiveCgtRate.toFixed(1)}%</td>
-                </tr>
-              </tbody>
-            </table>
+                  <tr>
+                    <td className="py-2 text-gray-600">Less: Purchase Price</td>
+                    <td className="py-2 text-right font-medium">
+                      &minus;{formatCurrency(parseFloat(purchasePrice) || 0)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">Less: Capital Costs</td>
+                    <td className="py-2 text-right font-medium">
+                      &minus;{formatCurrency(parseFloat(capitalCosts) || 0)}
+                    </td>
+                  </tr>
+                  <tr className="font-semibold">
+                    <td className="py-2 text-gray-900">Capital Gain</td>
+                    <td className="py-2 text-right">{formatCurrency(results.capitalGain)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">Holding Period</td>
+                    <td className="py-2 text-right font-medium">
+                      {results.heldMonths} months
+                      {results.discountEligible && (
+                        <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          Discount eligible
+                        </span>
+                      )}
+                      {!results.discountEligible && results.capitalGain > 0 && (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                          {results.entityType === "company"
+                            ? "Companies ineligible"
+                            : "No discount (<12 months)"}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">Entity Type</td>
+                    <td className="py-2 text-right font-medium">
+                      {ENTITY_INFO[results.entityType].label}
+                    </td>
+                  </tr>
+                  {results.discountEligible && (
+                    <tr>
+                      <td className="py-2 text-gray-600">
+                        Less: {results.discountPct}% CGT Discount
+                      </td>
+                      <td className="py-2 text-right font-medium text-green-700">
+                        &minus;{formatCurrency(results.discountAmount)}
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="font-semibold">
+                    <td className="py-2 text-gray-900">Net Taxable Capital Gain</td>
+                    <td className="py-2 text-right">{formatCurrency(results.taxableGain)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">
+                      {results.entityType === "company"
+                        ? "Company Tax Rate"
+                        : results.entityType === "smsf"
+                          ? "Super Fund Tax Rate"
+                          : "Marginal Tax Rate"}
+                    </td>
+                    <td className="py-2 text-right font-medium">
+                      {(results.marginalRate * 100).toFixed(0)}%
+                    </td>
+                  </tr>
+                  {results.taxInputMode === "income" &&
+                    results.entityType !== "company" &&
+                    results.entityType !== "smsf" && (
+                      <>
+                        <tr>
+                          <td className="py-2 text-gray-600">Tax on Income (without gain)</td>
+                          <td className="py-2 text-right font-medium">
+                            {formatCurrency(results.taxWithoutGain)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 text-gray-600">Tax on Income (with gain)</td>
+                          <td className="py-2 text-right font-medium">
+                            {formatCurrency(results.taxWithGain)}
+                          </td>
+                        </tr>
+                      </>
+                    )}
+                  <tr className="font-semibold text-red-700">
+                    <td className="py-2">Estimated CGT Payable</td>
+                    <td className="py-2 text-right">{formatCurrency(results.estimatedTax)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">Effective CGT Rate</td>
+                    <td className="py-2 text-right font-medium">
+                      {results.effectiveCgtRate.toFixed(1)}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 50% CGT Discount explanation */}
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-green-900 mb-3">
+              Understanding the CGT Discount
+            </h3>
+            <div className="space-y-3 text-sm text-green-800">
+              <p>
+                Australian tax law provides a CGT discount for assets held for at least
+                12 months before disposal. The discount reduces the capital gain before it is
+                added to your taxable income:
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>
+                  <strong>Individuals &amp; Trusts:</strong> 50% discount — only half the
+                  capital gain is taxable
+                </li>
+                <li>
+                  <strong>SMSFs:</strong> 33⅓% discount — two-thirds of the capital gain is
+                  taxable
+                </li>
+                <li>
+                  <strong>Companies:</strong> No discount — the full capital gain is taxed at
+                  the company rate (25% for base-rate entities, 30% otherwise)
+                </li>
+              </ul>
+              <p>
+                The discount applies to most CGT assets including investment property, shares,
+                ETFs, managed funds, and cryptocurrency. It does <strong>not</strong> apply to
+                assets acquired before 20 September 1999 (which use the indexation method
+                instead).
+              </p>
+            </div>
+          </div>
+
+          {/* Capital losses info */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-amber-900 mb-3">
+              Capital Losses &amp; Carry Forward
+            </h3>
+            <div className="space-y-3 text-sm text-amber-800">
+              <p>
+                If you make a capital loss, it can be used to <strong>offset capital gains</strong> in
+                the same financial year. Any unused losses can be <strong>carried forward
+                indefinitely</strong> to offset future capital gains.
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Capital losses <strong>cannot</strong> be deducted against other income (salary, wages, business income)</li>
+                <li>You must apply the loss against gains <strong>before</strong> applying the CGT discount</li>
+                <li>Losses must be reported in your tax return for the year they occur</li>
+                <li>There is <strong>no time limit</strong> on carrying forward capital losses</li>
+                <li>Losses on personal-use assets and collectables have special restrictions</li>
+              </ul>
+            </div>
           </div>
 
           {/* Exemptions & concessions */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-amber-900 mb-3">
-              Exemptions & Concessions
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Common Exemptions &amp; Concessions
             </h3>
-            <div className="space-y-3 text-sm text-amber-800">
+            <div className="space-y-3 text-sm text-gray-700">
               <div>
                 <p className="font-semibold">Main Residence Exemption</p>
                 <p>
-                  Your main home (principal place of residence) is generally exempt from CGT.
-                  If you lived in the property for the entire time you owned it, no CGT applies.
-                  Partial exemptions apply if it was your home for part of the ownership period or
-                  was used to produce income.
+                  Your principal place of residence is generally exempt from CGT. Partial
+                  exemptions apply if the property was your home for only part of the
+                  ownership period or was used to produce income.
                 </p>
               </div>
               <div>
                 <p className="font-semibold">6-Year Absence Rule</p>
                 <p>
-                  If you move out of your main residence and rent it out, you can treat it as your
-                  main residence for CGT purposes for up to 6 years — provided you do not claim
-                  another property as your main residence during that time.
+                  If you move out and rent your main residence, you can maintain the exemption
+                  for up to 6 years — provided you do not claim another property as your main
+                  residence during that time.
                 </p>
               </div>
               <div>
                 <p className="font-semibold">Small Business CGT Concessions</p>
                 <p>
-                  Small businesses with aggregated turnover under $2 million (or net CGT assets
-                  under $6 million) may qualify for the 15-year exemption, 50% active asset reduction,
-                  retirement exemption, or rollover relief. These can significantly reduce or eliminate
-                  CGT on active business assets.
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold">Shares & Crypto</p>
-                <p>
-                  The 50% CGT discount also applies to shares, ETFs, managed funds, and cryptocurrency
-                  held for more than 12 months by Australian individual taxpayers. Losses can offset
-                  gains but cannot reduce other income.
+                  Businesses with aggregated turnover under $2 million (or net CGT assets under
+                  $6 million) may qualify for the 15-year exemption, 50% active asset reduction,
+                  retirement exemption, or rollover relief.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 2025-26 Tax Brackets reference */}
+          {/* Tax brackets reference */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              2025–26 ATO Tax Brackets Used
+              2025–26 ATO Tax Brackets
             </h3>
             <table className="w-full text-sm">
               <thead>
@@ -403,7 +633,8 @@ export default function CapitalGainsTaxCalculator() {
               </tbody>
             </table>
             <p className="text-xs text-gray-400 mt-2">
-              Medicare levy of 2% is not included in this estimate. Consult a tax professional for your specific situation.
+              Medicare levy of 2% is not included. Company base rate is 25%. SMSF rate is 15%.
+              Consult a tax professional for your specific situation.
             </p>
           </div>
         </div>
