@@ -433,6 +433,66 @@ export default function SuperCalculator() {
         />
       </div>
 
+      {/* ASFA Retirement Benchmark Comparison */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-800 mb-4">
+          ASFA Comfortable Retirement Benchmark
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          The Association of Superannuation Funds of Australia (ASFA) estimates you need the following super balance at age 67 for a comfortable retirement:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Single benchmark */}
+          <div className="border rounded-lg p-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Single — $595,000</p>
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+              <div
+                className="h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, (result.projectedBalance / 595000) * 100)}%`,
+                  backgroundColor: result.projectedBalance >= 595000 ? "#059669" : "#f59e0b",
+                }}
+              />
+            </div>
+            <p className="text-sm">
+              {result.projectedBalance >= 595000 ? (
+                <span className="text-emerald-600 font-medium">
+                  You&apos;re on track — {formatCurrency(result.projectedBalance - 595000)} above benchmark
+                </span>
+              ) : (
+                <span className="text-amber-600 font-medium">
+                  {formatCurrency(595000 - result.projectedBalance)} shortfall — {Math.round((result.projectedBalance / 595000) * 100)}% of target
+                </span>
+              )}
+            </p>
+          </div>
+          {/* Couple benchmark */}
+          <div className="border rounded-lg p-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Couple — $690,000</p>
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+              <div
+                className="h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, (result.projectedBalance / 690000) * 100)}%`,
+                  backgroundColor: result.projectedBalance >= 690000 ? "#059669" : "#f59e0b",
+                }}
+              />
+            </div>
+            <p className="text-sm">
+              {result.projectedBalance >= 690000 ? (
+                <span className="text-emerald-600 font-medium">
+                  You&apos;re on track — {formatCurrency(result.projectedBalance - 690000)} above benchmark
+                </span>
+              ) : (
+                <span className="text-amber-600 font-medium">
+                  {formatCurrency(690000 - result.projectedBalance)} shortfall — {Math.round((result.projectedBalance / 690000) * 100)}% of target
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Salary Sacrifice Comparison Toggle */}
       <div>
         <button
