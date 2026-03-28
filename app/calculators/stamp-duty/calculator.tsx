@@ -123,6 +123,7 @@ function calcACTInvestor(value: number): number {
 interface DutyResult {
   baseDuty: number;
   concession: number;
+  foreignSurcharge: number;
   totalDuty: number;
 }
 
@@ -175,15 +176,17 @@ function calculateStampDuty(
   value: number,
   type: PropertyType,
   firstHomeBuyer: boolean,
+  foreignBuyer: boolean,
 ): DutyResult {
   const baseDuty = Math.round(getBaseDuty(state, value, type));
+  const foreignSurcharge = foreignBuyer ? Math.round(value * FOREIGN_SURCHARGE[state]) : 0;
 
   if (!firstHomeBuyer || type === "investment") {
-    return { baseDuty, concession: 0, totalDuty: baseDuty };
+    return { baseDuty, concession: 0, foreignSurcharge, totalDuty: baseDuty + foreignSurcharge };
   }
 
   const concession = Math.round(getFHBConcession(state, value, baseDuty));
-  return { baseDuty, concession, totalDuty: Math.max(0, baseDuty - concession) };
+  return { baseDuty, concession, foreignSurcharge, totalDuty: Math.max(0, baseDuty - concession) + foreignSurcharge };
 }
 
 // --- Formatting ---
@@ -196,6 +199,30 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+// --- Foreign buyer surcharge rates (% of property value) ---
+
+const FOREIGN_SURCHARGE: Record<StateCode, number> = {
+  NSW: 0.09,  // 9% — increased from 8% on 1 Jan 2025
+  VIC: 0.08,  // 8%
+  QLD: 0.08,  // 8% AFAD
+  SA: 0.07,   // 7%
+  WA: 0.07,   // 7%
+  TAS: 0.08,  // 8%
+  NT: 0,      // No surcharge
+  ACT: 0,     // No stamp duty surcharge (annual land tax surcharge instead)
+};
+
+const FOREIGN_NOTES: Record<StateCode, string> = {
+  NSW: "9% surcharge on residential property (increased Jan 2025)",
+  VIC: "8% foreign purchaser additional duty",
+  QLD: "8% Additional Foreign Acquirer Duty (AFAD)",
+  SA: "7% Foreign Ownership Surcharge",
+  WA: "7% foreign transfer duty on residential property",
+  TAS: "8% Foreign Investor Duty Surcharge",
+  NT: "No foreign buyer surcharge applies in the NT",
+  ACT: "No stamp duty surcharge — 0.75% annual land tax surcharge instead",
+};
 
 // --- FHB notes per state ---
 
@@ -217,19 +244,20 @@ export default function StampDutyCalculator({ initialState = "NSW" }: { initialS
   const [propertyValue, setPropertyValue] = useState(500000);
   const [propertyType, setPropertyType] = useState<PropertyType>("primary");
   const [firstHomeBuyer, setFirstHomeBuyer] = useState(false);
+  const [foreignBuyer, setForeignBuyer] = useState(false);
 
   const result = useMemo(
-    () => calculateStampDuty(state, propertyValue, propertyType, firstHomeBuyer),
-    [state, propertyValue, propertyType, firstHomeBuyer],
+    () => calculateStampDuty(state, propertyValue, propertyType, firstHomeBuyer, foreignBuyer),
+    [state, propertyValue, propertyType, firstHomeBuyer, foreignBuyer],
   );
 
   const comparison = useMemo(() => {
     return ALL_STATES.map((s) => ({
       code: s,
       name: STATE_NAMES[s],
-      ...calculateStampDuty(s, propertyValue, propertyType, firstHomeBuyer),
+      ...calculateStampDuty(s, propertyValue, propertyType, firstHomeBuyer, foreignBuyer),
     })).sort((a, b) => a.totalDuty - b.totalDuty);
-  }, [propertyValue, propertyType, firstHomeBuyer]);
+  }, [propertyValue, propertyType, firstHomeBuyer, foreignBuyer]);
 
   const effectiveRate = propertyValue > 0
     ? ((result.totalDuty / propertyValue) * 100).toFixed(2)
@@ -326,25 +354,51 @@ export default function StampDutyCalculator({ initialState = "NSW" }: { initialS
               <p className="text-xs text-gray-500 mt-1">{FHB_NOTES[state]}</p>
             )}
           </div>
+
+          {/* Foreign buyer surcharge toggle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Foreign Buyer
+            </label>
+            <button
+              onClick={() => setForeignBuyer(!foreignBuyer)}
+              className={`w-full px-3 py-2 text-sm rounded-lg border transition-colors ${
+                foreignBuyer
+                  ? "bg-red-600 text-white border-red-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              {foreignBuyer ? "Yes — Surcharge Applied" : "No"}
+            </button>
+            {foreignBuyer && (
+              <p className="text-xs text-gray-500 mt-1">{FOREIGN_NOTES[state]}</p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Results */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
-          <p className="text-sm text-gray-500 mb-1">Base Stamp Duty</p>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(result.baseDuty)}</p>
+          <p className="text-sm text-gray-500 mb-1">Base Duty</p>
+          <p className="text-xl font-bold text-gray-900">{formatCurrency(result.baseDuty)}</p>
         </div>
         <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
           <p className="text-sm text-gray-500 mb-1">Concessions</p>
-          <p className={`text-2xl font-bold ${result.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
+          <p className={`text-xl font-bold ${result.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
             {result.concession > 0 ? `−${formatCurrency(result.concession)}` : "$0"}
+          </p>
+        </div>
+        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
+          <p className="text-sm text-gray-500 mb-1">Foreign Surcharge</p>
+          <p className={`text-xl font-bold ${result.foreignSurcharge > 0 ? "text-red-600" : "text-gray-400"}`}>
+            {result.foreignSurcharge > 0 ? formatCurrency(result.foreignSurcharge) : "$0"}
           </p>
         </div>
         <div className="border border-blue-200 rounded-xl p-5 bg-blue-50 text-center">
           <p className="text-sm text-blue-700 mb-1">Total Stamp Duty</p>
-          <p className="text-2xl font-bold text-blue-900">{formatCurrency(result.totalDuty)}</p>
-          <p className="text-xs text-blue-600 mt-1">{effectiveRate}% of property value</p>
+          <p className="text-xl font-bold text-blue-900">{formatCurrency(result.totalDuty)}</p>
+          <p className="text-xs text-blue-600 mt-1">{effectiveRate}% effective rate</p>
         </div>
       </div>
 
@@ -370,10 +424,38 @@ export default function StampDutyCalculator({ initialState = "NSW" }: { initialS
               <span className="font-medium">−{formatCurrency(result.concession)}</span>
             </div>
           )}
+          {result.foreignSurcharge > 0 && (
+            <div className="flex justify-between text-red-700">
+              <span>Foreign buyer surcharge ({(FOREIGN_SURCHARGE[state] * 100).toFixed(0)}%)</span>
+              <span className="font-medium">+{formatCurrency(result.foreignSurcharge)}</span>
+            </div>
+          )}
           <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold">
-            <span>Total payable</span>
+            <span>Total stamp duty payable</span>
             <span className="text-blue-800">{formatCurrency(result.totalDuty)}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Total Purchase Cost Breakdown */}
+      <div className="border border-gray-200 rounded-xl p-6 bg-white">
+        <h3 className="font-semibold text-gray-900 mb-3">Total Purchase Cost</h3>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Property price</span>
+            <span className="font-medium">{formatCurrency(propertyValue)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Stamp duty</span>
+            <span className="font-medium">{formatCurrency(result.totalDuty)}</span>
+          </div>
+          <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold text-base">
+            <span>Estimated total cost</span>
+            <span className="text-blue-800">{formatCurrency(propertyValue + result.totalDuty)}</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Excludes legal fees, building inspections, loan fees, and other settlement costs.
+          </p>
         </div>
       </div>
 
@@ -395,6 +477,9 @@ export default function StampDutyCalculator({ initialState = "NSW" }: { initialS
                 <th className="text-right py-2 px-4 font-medium text-gray-700">Base Duty</th>
                 {firstHomeBuyer && propertyType !== "investment" && (
                   <th className="text-right py-2 px-4 font-medium text-gray-700">Concession</th>
+                )}
+                {foreignBuyer && (
+                  <th className="text-right py-2 px-4 font-medium text-gray-700">Surcharge</th>
                 )}
                 <th className="text-right py-2 px-4 font-medium text-gray-700">Total</th>
                 <th className="text-right py-2 pl-4 font-medium text-gray-700">Eff. Rate</th>
@@ -420,6 +505,11 @@ export default function StampDutyCalculator({ initialState = "NSW" }: { initialS
                   {firstHomeBuyer && propertyType !== "investment" && (
                     <td className={`text-right py-2 px-4 ${row.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
                       {row.concession > 0 ? `−${formatCurrency(row.concession)}` : "—"}
+                    </td>
+                  )}
+                  {foreignBuyer && (
+                    <td className={`text-right py-2 px-4 ${row.foreignSurcharge > 0 ? "text-red-600" : "text-gray-400"}`}>
+                      {row.foreignSurcharge > 0 ? formatCurrency(row.foreignSurcharge) : "—"}
                     </td>
                   )}
                   <td className="text-right py-2 px-4 font-semibold text-gray-900">
