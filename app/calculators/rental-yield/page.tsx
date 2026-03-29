@@ -5,7 +5,7 @@ import AdUnit from "../../components/AdUnit";
 export const metadata: Metadata = {
   title: "Rental Yield Calculator Australia 2026 | Gross & Net Yield",
   description:
-    "Free Australian rental yield calculator. Calculate gross and net rental yield from purchase price and weekly rent. Compare investment property returns across Australian suburbs.",
+    "Free Australian rental yield calculator. Calculate gross and net rental yield from purchase price and weekly rent. Compare up to 3 investment properties side by side.",
   keywords: [
     "rental yield calculator australia",
     "rental yield calculator",
@@ -15,11 +15,13 @@ export const metadata: Metadata = {
     "rental return calculator",
     "property yield calculator australia",
     "rental yield formula",
+    "compare rental yields",
+    "property investment comparison",
   ],
   openGraph: {
     title: "Rental Yield Calculator Australia 2026 — Gross & Net Yield",
     description:
-      "Calculate gross and net rental yield for Australian investment properties. Compare yields and estimate annual returns.",
+      "Calculate gross and net rental yield for Australian investment properties. Compare up to 3 properties side by side with city average benchmarks.",
     type: "website",
   },
 };
@@ -50,7 +52,12 @@ const faqs = [
     question:
       "Which Australian cities have the highest rental yields?",
     answer:
-      "Among capital cities, Darwin and Perth have historically offered the highest rental yields, often exceeding 5-6% gross. Regional areas across Australia frequently deliver even higher yields — towns in regional Queensland, Western Australia, and Tasmania can offer 7-10%+ gross yields. However, higher yields in regional areas may come with higher vacancy risk and slower capital growth. Sydney and Melbourne typically have the lowest yields (2-4%) but have historically delivered stronger long-term capital growth.",
+      "Among capital cities, Perth (4.5%) and Hobart (4.8%) currently offer the highest gross rental yields, followed by Adelaide (4.3%) and Brisbane (4.2%). Sydney (3.2%) and Melbourne (3.5%) typically have the lowest yields due to high property prices, but have historically delivered stronger long-term capital growth. Regional areas across Australia frequently deliver even higher yields — towns in regional Queensland, Western Australia, and Tasmania can offer 7-10%+ gross yields, though with higher vacancy risk.",
+  },
+  {
+    question: "How do I compare rental yields across multiple properties?",
+    answer:
+      "Use the Compare Properties feature in our calculator to enter details for up to 3 properties side by side. For each property, enter the purchase price, weekly rent, and total annual expenses. The comparison table shows gross yield, net yield, annual income, and weekly net income for each property, with the best-performing metric highlighted. This helps you quickly identify which property offers the strongest rental return relative to its cost.",
   },
 ];
 
@@ -59,7 +66,7 @@ const jsonLd = {
   "@type": "WebApplication",
   name: "Australian Rental Yield Calculator 2026",
   description:
-    "Free rental yield calculator for Australian investment properties. Calculate gross and net rental yield from purchase price and weekly rent.",
+    "Free rental yield calculator for Australian investment properties. Calculate gross and net rental yield, compare up to 3 properties, and benchmark against city averages.",
   url: "https://au-calculators.vercel.app/calculators/rental-yield",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Any",
@@ -87,6 +94,31 @@ const faqJsonLd = {
   })),
 };
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: "https://au-calculators.vercel.app",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Calculators",
+      item: "https://au-calculators.vercel.app/calculators",
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: "Rental Yield Calculator",
+      item: "https://au-calculators.vercel.app/calculators/rental-yield",
+    },
+  ],
+};
+
 export default function RentalYieldPage() {
   return (
     <>
@@ -98,6 +130,10 @@ export default function RentalYieldPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
@@ -107,7 +143,8 @@ export default function RentalYieldPage() {
           <p className="text-gray-600">
             Calculate gross and net rental yield for Australian investment
             properties. Enter your purchase price, weekly rent, and annual
-            expenses to see your true rental return.
+            expenses to see your true rental return. Compare up to 3 properties
+            side by side and benchmark against capital city averages.
           </p>
         </div>
 

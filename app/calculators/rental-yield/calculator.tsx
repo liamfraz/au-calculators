@@ -30,6 +30,64 @@ function yieldBorderBg(yieldPct: number): string {
   return "border-orange-200 bg-orange-50";
 }
 
+// --- City averages ---
+
+const cityAverages = [
+  { city: "Sydney", grossYield: 3.2 },
+  { city: "Melbourne", grossYield: 3.5 },
+  { city: "Brisbane", grossYield: 4.2 },
+  { city: "Adelaide", grossYield: 4.3 },
+  { city: "Perth", grossYield: 4.5 },
+  { city: "Hobart", grossYield: 4.8 },
+];
+
+// --- Types ---
+
+interface PropertyInputs {
+  label: string;
+  purchasePrice: number;
+  weeklyRent: number;
+  councilRates: number;
+  insurance: number;
+  maintenance: number;
+  managementFees: number;
+  strata: number;
+  waterRates: number;
+  otherExpenses: number;
+}
+
+function defaultProperty(label: string): PropertyInputs {
+  return {
+    label,
+    purchasePrice: 0,
+    weeklyRent: 0,
+    councilRates: 0,
+    insurance: 0,
+    maintenance: 0,
+    managementFees: 0,
+    strata: 0,
+    waterRates: 0,
+    otherExpenses: 0,
+  };
+}
+
+function calcResults(p: PropertyInputs) {
+  const annualRent = p.weeklyRent * 52;
+  const totalExpenses =
+    p.councilRates +
+    p.insurance +
+    p.maintenance +
+    p.managementFees +
+    p.strata +
+    p.waterRates +
+    p.otherExpenses;
+  const grossYield = p.purchasePrice > 0 ? (annualRent / p.purchasePrice) * 100 : 0;
+  const netIncome = annualRent - totalExpenses;
+  const netYield = p.purchasePrice > 0 ? (netIncome / p.purchasePrice) * 100 : 0;
+  const weeklyNetIncome = netIncome / 52;
+  return { annualRent, grossYield, totalExpenses, netIncome, netYield, weeklyNetIncome };
+}
+
 // --- Component ---
 
 export default function RentalYieldCalculator() {
@@ -42,6 +100,13 @@ export default function RentalYieldCalculator() {
   const [strata, setStrata] = useState(0);
   const [waterRates, setWaterRates] = useState(800);
   const [otherExpenses, setOtherExpenses] = useState(0);
+
+  // Property comparison
+  const [showComparison, setShowComparison] = useState(false);
+  const [compareProperties, setCompareProperties] = useState<PropertyInputs[]>([
+    defaultProperty("Property A"),
+    defaultProperty("Property B"),
+  ]);
 
   const results = useMemo(() => {
     const annualRent = weeklyRent * 52;
@@ -87,6 +152,26 @@ export default function RentalYieldCalculator() {
       return { weeklyRent: rent, annualRent: annual, grossYield: gross, netYield: net, isCurrent: offset === 0 };
     });
   }, [purchasePrice, weeklyRent, councilRates, insurance, maintenance, managementFees, strata, waterRates, otherExpenses]);
+
+  function updateCompareProperty(index: number, field: keyof PropertyInputs, value: string | number) {
+    setCompareProperties((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: typeof value === "string" ? value : Math.max(0, value) };
+      return updated;
+    });
+  }
+
+  function addCompareProperty() {
+    if (compareProperties.length < 3) {
+      setCompareProperties((prev) => [...prev, defaultProperty(`Property ${String.fromCharCode(65 + prev.length)}`)]);
+    }
+  }
+
+  function removeCompareProperty(index: number) {
+    if (compareProperties.length > 2) {
+      setCompareProperties((prev) => prev.filter((_, i) => i !== index));
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -144,7 +229,6 @@ export default function RentalYieldCalculator() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Council Rates */}
           <div>
             <label htmlFor="councilRates" className="block text-sm font-medium text-gray-700 mb-1">
               Council Rates
@@ -163,7 +247,6 @@ export default function RentalYieldCalculator() {
             </div>
           </div>
 
-          {/* Insurance */}
           <div>
             <label htmlFor="insurance" className="block text-sm font-medium text-gray-700 mb-1">
               Insurance
@@ -182,7 +265,6 @@ export default function RentalYieldCalculator() {
             </div>
           </div>
 
-          {/* Maintenance */}
           <div>
             <label htmlFor="maintenance" className="block text-sm font-medium text-gray-700 mb-1">
               Maintenance
@@ -201,7 +283,6 @@ export default function RentalYieldCalculator() {
             </div>
           </div>
 
-          {/* Management Fees */}
           <div>
             <label htmlFor="managementFees" className="block text-sm font-medium text-gray-700 mb-1">
               Management Fees
@@ -221,7 +302,6 @@ export default function RentalYieldCalculator() {
             <p className="text-xs text-gray-500 mt-1">Typically 7-10% of annual rent</p>
           </div>
 
-          {/* Strata */}
           <div>
             <label htmlFor="strata" className="block text-sm font-medium text-gray-700 mb-1">
               Strata / Body Corp
@@ -240,7 +320,6 @@ export default function RentalYieldCalculator() {
             </div>
           </div>
 
-          {/* Water Rates */}
           <div>
             <label htmlFor="waterRates" className="block text-sm font-medium text-gray-700 mb-1">
               Water Rates
@@ -259,7 +338,6 @@ export default function RentalYieldCalculator() {
             </div>
           </div>
 
-          {/* Other Expenses */}
           <div className="sm:col-span-2">
             <label htmlFor="otherExpenses" className="block text-sm font-medium text-gray-700 mb-1">
               Other Annual Expenses
@@ -383,29 +461,269 @@ export default function RentalYieldCalculator() {
         </div>
       </div>
 
+      {/* Average Rental Yields by City */}
+      <div className="border border-gray-200 rounded-xl p-6 bg-white">
+        <h3 className="font-semibold text-gray-900 mb-1">
+          Average Rental Yields by Capital City
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Typical gross rental yields for Australian capital cities (houses &amp; units combined). Your yield of{" "}
+          <span className={`font-semibold ${yieldColor(results.grossYield)}`}>
+            {formatPercent(results.grossYield)}
+          </span>{" "}
+          is highlighted for comparison.
+        </p>
+
+        <div className="space-y-3">
+          {cityAverages.map((c) => {
+            const barWidth = Math.min(100, (c.grossYield / 6) * 100);
+            const userBarWidth = Math.min(100, (results.grossYield / 6) * 100);
+            return (
+              <div key={c.city}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-medium text-gray-700">{c.city}</span>
+                  <span className={`font-semibold ${yieldColor(c.grossYield)}`}>
+                    {formatPercent(c.grossYield)}
+                  </span>
+                </div>
+                <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-blue-200 rounded-full"
+                    style={{ width: `${barWidth}%` }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-red-500"
+                    style={{ left: `${userBarWidth}%` }}
+                    title={`Your yield: ${formatPercent(results.grossYield)}`}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-3 bg-blue-200 rounded" /> City average
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-0.5 bg-red-500" /> Your gross yield
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Property Comparison */}
+      <div className="border border-gray-200 rounded-xl p-6 bg-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Compare Properties</h3>
+            <p className="text-sm text-gray-500">Enter details for up to 3 properties to compare yields side by side.</p>
+          </div>
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+          >
+            {showComparison ? "Hide" : "Show"} Comparison
+          </button>
+        </div>
+
+        {showComparison && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {compareProperties.map((prop, idx) => (
+                <div key={idx} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <input
+                      type="text"
+                      value={prop.label}
+                      onChange={(e) => updateCompareProperty(idx, "label", e.target.value)}
+                      className="font-medium text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-0 py-0.5 w-full"
+                    />
+                    {compareProperties.length > 2 && (
+                      <button
+                        onClick={() => removeCompareProperty(idx)}
+                        className="text-gray-400 hover:text-red-500 ml-2 text-sm"
+                        title="Remove property"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Purchase Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10000}
+                        value={prop.purchasePrice}
+                        onChange={(e) => updateCompareProperty(idx, "purchasePrice", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Weekly Rent</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        value={prop.weeklyRent}
+                        onChange={(e) => updateCompareProperty(idx, "weeklyRent", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Annual Expenses (total)</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={500}
+                        value={
+                          prop.councilRates +
+                          prop.insurance +
+                          prop.maintenance +
+                          prop.managementFees +
+                          prop.strata +
+                          prop.waterRates +
+                          prop.otherExpenses
+                        }
+                        onChange={(e) => {
+                          const total = Math.max(0, Number(e.target.value));
+                          updateCompareProperty(idx, "otherExpenses", total);
+                          updateCompareProperty(idx, "councilRates", 0);
+                          updateCompareProperty(idx, "insurance", 0);
+                          updateCompareProperty(idx, "maintenance", 0);
+                          updateCompareProperty(idx, "managementFees", 0);
+                          updateCompareProperty(idx, "strata", 0);
+                          updateCompareProperty(idx, "waterRates", 0);
+                        }}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {compareProperties.length < 3 && (
+              <button
+                onClick={addCompareProperty}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                + Add property
+              </button>
+            )}
+
+            {/* Comparison Results */}
+            {compareProperties.some((p) => p.purchasePrice > 0) && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-2 pr-4 font-medium text-gray-700">Metric</th>
+                      {compareProperties.map((p, idx) => (
+                        <th key={idx} className="text-right py-2 px-4 font-medium text-gray-700">
+                          {p.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: "Purchase Price", key: "purchasePrice" as const, fmt: "currency" },
+                      { label: "Weekly Rent", key: "weeklyRent" as const, fmt: "currency" },
+                      { label: "Annual Rent", key: "annualRent" as const, fmt: "currency" },
+                      { label: "Annual Expenses", key: "totalExpenses" as const, fmt: "currency" },
+                      { label: "Gross Yield", key: "grossYield" as const, fmt: "percent" },
+                      { label: "Net Yield", key: "netYield" as const, fmt: "percent" },
+                      { label: "Net Annual Income", key: "netIncome" as const, fmt: "currency" },
+                      { label: "Weekly Net Income", key: "weeklyNetIncome" as const, fmt: "currency" },
+                    ].map((row) => {
+                      const values = compareProperties.map((p) => {
+                        const r = calcResults(p);
+                        if (row.key === "purchasePrice") return p.purchasePrice;
+                        if (row.key === "weeklyRent") return p.weeklyRent;
+                        return r[row.key as keyof typeof r];
+                      });
+
+                      // Find best yield for highlighting
+                      const yieldKeys = ["grossYield", "netYield", "netIncome", "weeklyNetIncome"];
+                      const isYieldRow = yieldKeys.includes(row.key);
+                      const activeValues = values.filter((_, i) => compareProperties[i].purchasePrice > 0);
+                      const bestVal = isYieldRow && activeValues.length > 1 ? Math.max(...activeValues) : null;
+
+                      return (
+                        <tr key={row.key} className="border-b border-gray-100">
+                          <td className="py-2 pr-4 text-gray-600">{row.label}</td>
+                          {values.map((val, idx) => {
+                            if (compareProperties[idx].purchasePrice === 0) {
+                              return (
+                                <td key={idx} className="text-right py-2 px-4 text-gray-300">
+                                  —
+                                </td>
+                              );
+                            }
+                            const isBest = bestVal !== null && val === bestVal;
+                            const colorClass =
+                              row.fmt === "percent"
+                                ? yieldColor(val)
+                                : row.key === "netIncome" || row.key === "weeklyNetIncome"
+                                  ? val >= 0
+                                    ? "text-gray-900"
+                                    : "text-red-600"
+                                  : "text-gray-900";
+                            return (
+                              <td
+                                key={idx}
+                                className={`text-right py-2 px-4 font-medium ${colorClass} ${isBest ? "bg-green-50" : ""}`}
+                              >
+                                {row.fmt === "percent"
+                                  ? formatPercent(val)
+                                  : formatCurrency(Math.round(val))}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Related Calculators */}
       <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            href="/calculators/mortgage-repayment"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Mortgage Repayment Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/calculators/stamp-duty"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
             href="/calculators/negative-gearing"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
             <span className="text-blue-600 font-medium">Negative Gearing Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/calculators/investment-property-cashflow"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Investment Property Cash Flow Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/cgt-calculator"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Capital Gains Tax Calculator</span>
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
           <Link
