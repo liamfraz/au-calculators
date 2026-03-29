@@ -163,28 +163,42 @@ function InputPanel({
       {label && <h3 className="font-semibold text-lg text-gray-800">{label}</h3>}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount ($)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Loan Amount: {formatCurrency(inputs.loanAmount)}
+        </label>
         <input
-          type="number"
+          type="range"
           value={inputs.loanAmount}
           onChange={(e) => onChange({ ...inputs, loanAmount: Number(e.target.value) })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          min={0}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          min={5000}
+          max={100000}
           step={1000}
         />
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>$5,000</span>
+          <span>$100,000</span>
+        </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Interest Rate: {inputs.interestRate.toFixed(2)}%
+          <span className="font-normal text-gray-400 ml-1">(AU avg ~7.5%)</span>
+        </label>
         <input
-          type="number"
+          type="range"
           value={inputs.interestRate}
           onChange={(e) => onChange({ ...inputs, interestRate: Number(e.target.value) })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          min={0}
-          max={30}
-          step={0.01}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          min={1}
+          max={15}
+          step={0.1}
         />
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>1%</span>
+          <span>15%</span>
+        </div>
       </div>
 
       <div>
@@ -251,7 +265,7 @@ function ResultCard({ label, value, subtext }: { label: string; value: string; s
 export default function CarLoanCalculator() {
   const [inputs, setInputs] = useState<Inputs>({
     loanAmount: 30000,
-    interestRate: 7,
+    interestRate: 7.5,
     loanTerm: 5,
     frequency: "monthly",
     balloonPayment: 0,
