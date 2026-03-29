@@ -71,6 +71,12 @@ export default function RootLayout({
                 Mortgage
               </Link>
               <Link
+                href="/mortgage-offset-calculator"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Offset
+              </Link>
+              <Link
                 href="/car-loan-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
