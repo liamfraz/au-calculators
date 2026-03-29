@@ -125,6 +125,12 @@ export default function RootLayout({
                 CGT
               </Link>
               <Link
+                href="/negative-gearing-calculator"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Neg. Gearing
+              </Link>
+              <Link
                 href="/calculators/gst"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
