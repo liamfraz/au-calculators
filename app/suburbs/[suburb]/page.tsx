@@ -145,7 +145,6 @@ export default async function SuburbPage({
   const suburb = SLUG_TO_SUBURB[slug];
   if (!suburb) return null;
 
-  const monthlyRent = suburb.averageRent * 4.33;
   const annualRent = suburb.averageRent * 52;
   const deposit = suburb.medianPrice - suburb.typicalLoan;
   const monthlyRepayment = Math.round(

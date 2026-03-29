@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 
-// --- 2024-25 ATO Tax Brackets (Australian Resident) ---
+// --- 2025-26 ATO Tax Brackets (Australian Resident) ---
 
 const TAX_BRACKETS = [
   { min: 0, max: 18200, rate: 0, base: 0 },
@@ -14,7 +14,7 @@ const TAX_BRACKETS = [
 
 const MEDICARE_LEVY = 0.02;
 
-// --- Simplified Land Tax by State (2024-25) ---
+// --- Simplified Land Tax by State (2025-26) ---
 // Land tax is based on unimproved land value, not purchase price.
 // These are simplified single-threshold estimates for investment properties.
 
@@ -841,6 +841,83 @@ export default function NegativeGearingCalculator() {
         </div>
       </div>
 
+      {/* Positively vs Negatively Geared Comparison */}
+      <div className="border border-gray-200 rounded-xl p-6 bg-white">
+        <h3 className="font-semibold text-gray-900 mb-3">Positively Geared vs Negatively Geared</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Comparison using your inputs. The &quot;positively geared&quot; scenario assumes rent covers all expenses with a $2,000 surplus.
+        </p>
+        {(() => {
+          const posRentSurplus = 2000;
+          const posRentalIncome = results.totalPropertyExpenses + posRentSurplus;
+          const posTaxableWithProperty = salary + posRentSurplus;
+          const posTaxWithProperty = calculateTax(posTaxableWithProperty);
+          const posExtraTax = posTaxWithProperty - results.taxWithoutProperty;
+          const posAfterTaxCashFlow = posRentSurplus - posExtraTax;
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700"></th>
+                    <th className="text-right py-2 px-4 font-medium text-red-700">Negatively Geared</th>
+                    <th className="text-right py-2 pl-4 font-medium text-green-700">Positively Geared</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4 text-gray-600">Annual Rental Income</td>
+                    <td className="text-right py-2 px-4">{formatCurrency(results.annualRent)}</td>
+                    <td className="text-right py-2 pl-4">{formatCurrency(Math.round(posRentalIncome))}</td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4 text-gray-600">Total Expenses (incl. depreciation)</td>
+                    <td className="text-right py-2 px-4">{formatCurrency(results.totalPropertyExpenses)}</td>
+                    <td className="text-right py-2 pl-4">{formatCurrency(results.totalPropertyExpenses)}</td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4 text-gray-600">Net Rental Result</td>
+                    <td className={`text-right py-2 px-4 font-medium ${results.rentalResult < 0 ? "text-red-600" : "text-green-600"}`}>
+                      {formatCurrency(results.rentalResult)}
+                    </td>
+                    <td className="text-right py-2 pl-4 font-medium text-green-600">
+                      +{formatCurrency(posRentSurplus)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4 text-gray-600">Tax Impact</td>
+                    <td className="text-right py-2 px-4 text-green-600">
+                      Saves {formatCurrency(results.taxSaving)}
+                    </td>
+                    <td className="text-right py-2 pl-4 text-red-600">
+                      Pays +{formatCurrency(posExtraTax)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2 pr-4 text-gray-600">After-Tax Cash Position</td>
+                    <td className={`text-right py-2 px-4 font-semibold ${results.afterTaxCost > 0 ? "text-red-700" : "text-green-700"}`}>
+                      -{formatCurrency(Math.abs(Math.round(results.afterTaxCost)))}/yr
+                    </td>
+                    <td className="text-right py-2 pl-4 font-semibold text-green-700">
+                      +{formatCurrency(Math.round(posAfterTaxCashFlow))}/yr
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4 text-gray-600">Strategy</td>
+                    <td className="text-right py-2 px-4 text-xs text-gray-500">
+                      Relies on capital growth to profit
+                    </td>
+                    <td className="text-right py-2 pl-4 text-xs text-gray-500">
+                      Immediate cash flow + growth
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* 10-Year Projection */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
         <h3 className="font-semibold text-gray-900 mb-4">10-Year Projection</h3>
@@ -989,7 +1066,7 @@ export default function NegativeGearingCalculator() {
 
       {/* Tax Brackets Reference */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
-        <h3 className="font-semibold text-gray-900 mb-3">2024-25 ATO Tax Brackets</h3>
+        <h3 className="font-semibold text-gray-900 mb-3">2025-26 ATO Tax Brackets</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -1038,7 +1115,7 @@ export default function NegativeGearingCalculator() {
       <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
         <p className="text-sm text-amber-800">
           <span className="font-semibold">Disclaimer:</span> This calculator provides estimates only
-          based on the 2024-25 ATO tax rates. It does not account for the Medicare Levy Surcharge,
+          based on the 2025-26 ATO tax rates. It does not account for the Medicare Levy Surcharge,
           private health insurance rebate adjustments, HELP debt repayments, capital gains tax on sale,
           or other offsets. Depreciation estimates are simplified — obtain a quantity surveyor report for
           accurate depreciation schedules. Consult a registered tax agent for specific tax advice about
@@ -1051,10 +1128,24 @@ export default function NegativeGearingCalculator() {
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            href="/calculators/mortgage-repayment"
+            href="/calculators/capital-gains-tax"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
-            <span className="text-blue-600 font-medium">Mortgage Repayment Calculator</span>
+            <span className="text-blue-600 font-medium">Capital Gains Tax Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/calculators/investment-property-cashflow"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Investment Property Cash Flow</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/stamp-duty-calculator"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
           <Link
@@ -1065,31 +1156,17 @@ export default function NegativeGearingCalculator() {
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
           <Link
-            href="/calculators/property-cashflow"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Property Cash Flow Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/calculators/capital-gains-tax"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Capital Gains Tax Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/calculators/stamp-duty"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
             href="/calculators/depreciation"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
             <span className="text-blue-600 font-medium">Depreciation Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/calculators/mortgage-repayment"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Mortgage Repayment Calculator</span>
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
         </div>
