@@ -3,6 +3,8 @@ import { SUBURBS as MORTGAGE_RATE_SUBURBS } from "./mortgage-rates/suburbs";
 import { SUBURBS as STAMP_DUTY_SUBURBS } from "./stamp-duty-calculator/suburbs/data";
 import { SUBURBS as CAR_LOAN_SUBURBS } from "./calculators/car-loan/suburbs";
 import { SUBURBS as ENERGY_BILL_SUBURBS } from "./calculators/energy-bill/suburbs";
+import { SUBURBS as MORTGAGE_OFFSET_SUBURBS } from "./calculators/mortgage-offset/suburbs";
+import { SUBURBS as SUBURB_HUB_PAGES } from "./suburbs/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://au-calculators.vercel.app";
@@ -138,6 +140,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/calculators/investment-property-cashflow`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/calculators/land-tax`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -224,6 +232,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     ...ENERGY_BILL_SUBURBS.map((s) => ({
       url: `${baseUrl}/calculators/energy-bill/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    {
+      url: `${baseUrl}/mortgage-offset-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/calculators/mortgage-offset`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    ...MORTGAGE_OFFSET_SUBURBS.map((s) => ({
+      url: `${baseUrl}/calculators/mortgage-offset/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    ...SUBURB_HUB_PAGES.map((s) => ({
+      url: `${baseUrl}/suburbs/${s.slug}`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
