@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SUBURBS as MORTGAGE_RATE_SUBURBS } from "./mortgage-rates/suburbs";
+import { SUBURBS as STAMP_DUTY_SUBURBS } from "./stamp-duty-calculator/suburbs/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://au-calculators.vercel.app";
@@ -177,11 +178,41 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/land-tax-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/super-contribution-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/mortgage-rates`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     ...mortgageRatePages,
+    {
+      url: `${baseUrl}/electricity-bill-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/centrelink-payment-estimator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    ...STAMP_DUTY_SUBURBS.map((s) => ({
+      url: `${baseUrl}/stamp-duty-calculator/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
   ];
 }
