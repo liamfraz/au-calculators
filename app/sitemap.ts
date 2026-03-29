@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SUBURBS as MORTGAGE_RATE_SUBURBS } from "./mortgage-rates/suburbs";
 import { SUBURBS as STAMP_DUTY_SUBURBS } from "./stamp-duty-calculator/suburbs/data";
 import { SUBURBS as CAR_LOAN_SUBURBS } from "./calculators/car-loan/suburbs";
+import { SUBURBS as ENERGY_BILL_SUBURBS } from "./calculators/energy-bill/suburbs";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://au-calculators.vercel.app";
@@ -217,6 +218,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     ...CAR_LOAN_SUBURBS.map((s) => ({
       url: `${baseUrl}/calculators/car-loan/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    ...ENERGY_BILL_SUBURBS.map((s) => ({
+      url: `${baseUrl}/calculators/energy-bill/${s.slug}`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
