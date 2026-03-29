@@ -13,15 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// FY2025-26 Australian tax brackets (resident)
-const TAX_BRACKETS = [
-  { min: 0, max: 18200, rate: 0, base: 0 },
-  { min: 18201, max: 45000, rate: 0.16, base: 0 },
-  { min: 45001, max: 135000, rate: 0.3, base: 4288 },
-  { min: 135001, max: 190000, rate: 0.37, base: 31288 },
-  { min: 190001, max: Infinity, rate: 0.45, base: 51638 },
-];
-
 const MEDICARE_LEVY_RATE = 0.02;
 
 interface Inputs {
@@ -37,43 +28,6 @@ interface Inputs {
   depreciation: number;
   marginalTaxRate: "0" | "0.16" | "0.30" | "0.37" | "0.45";
   includesMedicare: boolean;
-}
-
-function calculateIncomeTax(taxableIncome: number): number {
-  if (taxableIncome <= 0) return 0;
-  for (const bracket of TAX_BRACKETS) {
-    if (taxableIncome <= bracket.max) {
-      return bracket.base + (taxableIncome - bracket.min + 1) * bracket.rate;
-    }
-  }
-  const last = TAX_BRACKETS[TAX_BRACKETS.length - 1];
-  return last.base + (taxableIncome - last.min + 1) * last.rate;
-}
-
-function getMarginalRate(taxableIncome: number): number {
-  for (const bracket of TAX_BRACKETS) {
-    if (taxableIncome <= bracket.max) {
-      return bracket.rate;
-    }
-  }
-  return TAX_BRACKETS[TAX_BRACKETS.length - 1].rate;
-}
-
-function getSalaryForRate(rate: string): number {
-  switch (rate) {
-    case "0":
-      return 15000;
-    case "0.16":
-      return 35000;
-    case "0.30":
-      return 90000;
-    case "0.37":
-      return 160000;
-    case "0.45":
-      return 220000;
-    default:
-      return 90000;
-  }
 }
 
 function formatCurrency(value: number): string {
