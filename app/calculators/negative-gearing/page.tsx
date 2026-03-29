@@ -3,9 +3,9 @@ import NegativeGearingCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
-  title: "Negative Gearing Calculator Australia 2024 | Tax Benefit Estimator",
+  title: "Negative Gearing Calculator Australia 2025 | Tax Benefit Estimator",
   description:
-    "Free Australian negative gearing calculator. Estimate the tax benefit of negatively geared investment property. See how rental losses offset your taxable income using 2024-25 ATO tax rates.",
+    "Free Australian negative gearing calculator. Estimate the tax benefit of negatively geared investment property. See how rental losses offset your taxable income using 2025-26 ATO tax rates.",
   keywords: [
     "negative gearing calculator",
     "negative gearing calculator australia",
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
     "negatively geared property",
   ],
   openGraph: {
-    title: "Negative Gearing Calculator Australia 2024 — Tax Benefit Estimator",
+    title: "Negative Gearing Calculator Australia 2025 — Tax Benefit Estimator",
     description:
-      "Calculate the tax benefit of negatively geared property. See how rental losses reduce your taxable income using current ATO tax rates.",
+      "Calculate the tax benefit of negatively geared property. See how rental losses reduce your taxable income using 2025-26 ATO tax rates.",
     type: "website",
   },
 };
@@ -46,7 +46,7 @@ const faqs = [
       "Whether negative gearing is worthwhile depends on several factors: your marginal tax rate (higher brackets gain more benefit), expected capital growth of the property, your cash flow position, and how long you intend to hold the property. Negative gearing reduces your tax bill but does not eliminate the out-of-pocket cost entirely — you are still spending more on the property than it earns in rent. The strategy relies on capital growth over time to deliver a net profit when the property is eventually sold. It tends to benefit higher-income earners most due to their higher marginal tax rates.",
   },
   {
-    question: "What are the 2024-25 ATO tax brackets for calculating negative gearing benefits?",
+    question: "What are the 2025-26 ATO tax brackets for calculating negative gearing benefits?",
     answer:
       "The 2025-26 Australian resident individual tax rates are: $0 to $18,200 — nil; $18,201 to $45,000 — 16 cents per dollar over $18,200; $45,001 to $135,000 — $4,288 plus 30 cents per dollar over $45,000; $135,001 to $190,000 — $31,288 plus 37 cents per dollar over $135,000; $190,001 and above — $51,638 plus 45 cents per dollar over $190,000. The Medicare levy of 2% applies on top. Your marginal rate determines how much tax you save per dollar of rental loss.",
   },
@@ -55,9 +55,9 @@ const faqs = [
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Australian Negative Gearing Calculator 2024",
+  name: "Australian Negative Gearing Calculator 2025",
   description:
-    "Free negative gearing calculator for Australian investment property. Estimate how rental losses reduce your taxable income and calculate annual tax savings using current ATO tax rates.",
+    "Free negative gearing calculator for Australian investment property. Estimate how rental losses reduce your taxable income and calculate annual tax savings using 2025-26 ATO tax rates.",
   url: "https://au-calculators.vercel.app/calculators/negative-gearing",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Any",
@@ -70,6 +70,25 @@ const jsonLd = {
     "@type": "Organization",
     name: "AU Calculators",
   },
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: "https://au-calculators.vercel.app",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Negative Gearing Calculator",
+      item: "https://au-calculators.vercel.app/calculators/negative-gearing",
+    },
+  ],
 };
 
 const faqJsonLd = {
@@ -96,16 +115,20 @@ export default function NegativeGearingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Negative Gearing Calculator Australia 2024
+            Negative Gearing Calculator Australia 2025
           </h1>
           <p className="text-gray-600">
             Calculate the tax benefit of negatively geared investment property. See how rental
             losses offset your taxable income and estimate your annual tax saving using official
-            2024-25 ATO tax rates.
+            2025-26 ATO tax rates.
           </p>
         </div>
 
