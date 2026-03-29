@@ -1,5 +1,43 @@
 import Link from "next/link";
 
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "AU Calculators — Free Financial Calculators for Australians",
+  description:
+    "Free Australian financial calculators for mortgage repayments, stamp duty, income tax, superannuation, car loans, capital gains tax, and more. Updated with 2025-26 rates and thresholds.",
+  url: "https://au-calculators.vercel.app",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Any",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "AUD",
+  },
+  author: {
+    "@type": "Organization",
+    name: "AU Calculators",
+  },
+  featureList: [
+    "Mortgage Repayment Calculator",
+    "Stamp Duty Calculator — All States",
+    "Income Tax & PAYG Withholding Calculator",
+    "Car Loan Calculator",
+    "Capital Gains Tax Calculator",
+    "Superannuation Calculator",
+    "HECS-HELP Repayment Calculator",
+    "Compound Interest Calculator",
+    "Centrelink Payment Estimator",
+    "Rental Yield Calculator",
+    "Property Cash Flow Calculator",
+    "Land Tax Calculator",
+    "Depreciation Schedule Estimator",
+    "Energy Bill Calculator",
+    "Super Contribution Calculator",
+    "BMI Calculator",
+  ],
+};
+
 interface Calculator {
   title: string;
   description: string;
@@ -22,7 +60,7 @@ const calculators: Calculator[] = [
     title: "Car Loan Calculator",
     description:
       "Calculate car loan repayments with balloon payment option. Compare weekly, fortnightly, and monthly repayments across different rates and terms.",
-    href: "/calculators/car-loan",
+    href: "/car-loan-calculator",
     icon: "🚗",
     tags: ["Car Finance", "Vehicle Loan", "Balloon Payment"],
   },
@@ -30,7 +68,7 @@ const calculators: Calculator[] = [
     title: "Stamp Duty Calculator",
     description:
       "Calculate stamp duty (transfer duty) for all Australian states and territories. Compare rates, apply first home buyer concessions, and see 2025–2026 rates.",
-    href: "/calculators/stamp-duty",
+    href: "/stamp-duty-calculator",
     icon: "📋",
     tags: ["Property", "Transfer Duty", "All States"],
   },
@@ -94,7 +132,7 @@ const calculators: Calculator[] = [
     title: "Land Tax Calculator",
     description:
       "Calculate land tax for all Australian states using 2025-2026 thresholds and rates. Compare land tax across states with trust and absentee surcharges.",
-    href: "/calculators/land-tax",
+    href: "/land-tax-calculator",
     icon: "🏗️",
     tags: ["Land Tax", "All States", "Thresholds"],
   },
@@ -118,9 +156,17 @@ const calculators: Calculator[] = [
     title: "Capital Gains Tax Calculator",
     description:
       "Calculate CGT on property, shares, and crypto. Auto-detects the 50% discount for assets held over 12 months and estimates tax using 2025-26 ATO brackets.",
-    href: "/calculators/capital-gains-tax",
+    href: "/cgt-calculator",
     icon: "📊",
     tags: ["CGT", "Property", "Shares"],
+  },
+  {
+    title: "Super Contribution Calculator",
+    description:
+      "Calculate optimal super contributions, salary sacrifice tax savings, concessional cap ($30K), carry-forward amounts, and compare contribution scenarios for FY2025-26.",
+    href: "/super-contribution-calculator",
+    icon: "\uD83C\uDFAF",
+    tags: ["Super", "Contributions", "Tax Savings"],
   },
   {
     title: "BMI Calculator",
@@ -130,10 +176,31 @@ const calculators: Calculator[] = [
     icon: "⚖️",
     tags: ["BMI", "Healthy Weight", "Health"],
   },
+  {
+    title: "Centrelink Payment Estimator",
+    description:
+      "Estimate Centrelink payments including JobSeeker, Youth Allowance, Age Pension, and Parenting Payment. Apply income test and assets test with 2025-26 rates.",
+    href: "/centrelink-payment-estimator",
+    icon: "\uD83C\uDFE6",
+    tags: ["JobSeeker", "Income Test", "Assets Test"],
+  },
+  {
+    title: "Electricity Bill Calculator",
+    description:
+      "Estimate your quarterly and annual electricity costs by state. Adjust usage rates, supply charges, and calculate how much solar panels can save you.",
+    href: "/electricity-bill-calculator",
+    icon: "💡",
+    tags: ["Electricity", "Power Bill", "Solar"],
+  },
 ];
 
 export default function Home() {
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+      />
     <div className="max-w-6xl mx-auto px-4 py-12">
       <section className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -186,5 +253,6 @@ export default function Home() {
         })}
       </div>
     </div>
+    </>
   );
 }

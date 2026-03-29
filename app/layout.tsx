@@ -71,7 +71,7 @@ export default function RootLayout({
                 Mortgage
               </Link>
               <Link
-                href="/calculators/car-loan"
+                href="/car-loan-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
                 Car Loan
@@ -95,7 +95,7 @@ export default function RootLayout({
                 HECS
               </Link>
               <Link
-                href="/calculators/stamp-duty"
+                href="/stamp-duty-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
                 Stamp Duty
@@ -113,7 +113,7 @@ export default function RootLayout({
                 Land Tax
               </Link>
               <Link
-                href="/calculators/capital-gains-tax"
+                href="/cgt-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
                 CGT

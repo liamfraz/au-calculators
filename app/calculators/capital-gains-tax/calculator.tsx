@@ -86,7 +86,8 @@ export default function CapitalGainsTaxCalculator() {
   const [purchaseDate, setPurchaseDate] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [saleDate, setSaleDate] = useState("");
-  const [capitalCosts, setCapitalCosts] = useState("");
+  const [capitalImprovements, setCapitalImprovements] = useState("");
+  const [sellingCosts, setSellingCosts] = useState("");
   const [entityType, setEntityType] = useState<EntityType>("individual");
   const [taxInputMode, setTaxInputMode] = useState<TaxInputMode>("rate");
   const [taxableIncome, setTaxableIncome] = useState("");
@@ -96,7 +97,7 @@ export default function CapitalGainsTaxCalculator() {
   function calculate() {
     const purchase = parseFloat(purchasePrice) || 0;
     const sale = parseFloat(salePrice) || 0;
-    const costs = parseFloat(capitalCosts) || 0;
+    const costs = (parseFloat(capitalImprovements) || 0) + (parseFloat(sellingCosts) || 0);
 
     if (!purchase || !sale || !purchaseDate || !saleDate) return;
 
@@ -224,20 +225,37 @@ export default function CapitalGainsTaxCalculator() {
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Capital Costs ($)
-            <span className="text-gray-400 font-normal ml-1">
-              improvements, agent fees, legal, stamp duty on purchase
-            </span>
-          </label>
-          <input
-            type="number"
-            value={capitalCosts}
-            onChange={(e) => setCapitalCosts(e.target.value)}
-            placeholder="0"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Capital Improvements ($)
+              <span className="text-gray-400 font-normal ml-1">
+                renovations, extensions
+              </span>
+            </label>
+            <input
+              type="number"
+              value={capitalImprovements}
+              onChange={(e) => setCapitalImprovements(e.target.value)}
+              placeholder="0"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Selling Costs ($)
+              <span className="text-gray-400 font-normal ml-1">
+                agent fees, legal, advertising
+              </span>
+            </label>
+            <input
+              type="number"
+              value={sellingCosts}
+              onChange={(e) => setSellingCosts(e.target.value)}
+              placeholder="0"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
         </div>
 
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Tax Details</h2>
@@ -432,9 +450,15 @@ export default function CapitalGainsTaxCalculator() {
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2 text-gray-600">Less: Capital Costs</td>
+                    <td className="py-2 text-gray-600">Less: Capital Improvements</td>
                     <td className="py-2 text-right font-medium">
-                      &minus;{formatCurrency(parseFloat(capitalCosts) || 0)}
+                      &minus;{formatCurrency(parseFloat(capitalImprovements) || 0)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-600">Less: Selling Costs</td>
+                    <td className="py-2 text-right font-medium">
+                      &minus;{formatCurrency(parseFloat(sellingCosts) || 0)}
                     </td>
                   </tr>
                   <tr className="font-semibold">
