@@ -185,6 +185,14 @@ const calculators: Calculator[] = [
     tags: ["JobSeeker", "Income Test", "Assets Test"],
   },
   {
+    title: "Salary Sacrifice Calculator",
+    description:
+      "Calculate tax savings from salary sacrificing into super. Compare take-home pay, check the $30,000 concessional cap, and project your super balance at retirement.",
+    href: "/salary-sacrifice-calculator",
+    icon: "\uD83D\uDCB8",
+    tags: ["Salary Sacrifice", "Super", "Tax Savings"],
+  },
+  {
     title: "Electricity Bill Calculator",
     description:
       "Estimate your quarterly and annual electricity costs by state. Adjust usage rates, supply charges, and calculate how much solar panels can save you.",

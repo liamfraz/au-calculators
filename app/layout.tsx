@@ -149,6 +149,12 @@ export default function RootLayout({
                 Tax
               </Link>
               <Link
+                href="/salary-sacrifice-calculator"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Sal. Sacrifice
+              </Link>
+              <Link
                 href="/bmi-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
