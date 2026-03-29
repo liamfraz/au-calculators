@@ -14,12 +14,14 @@ import {
 } from "recharts";
 
 type Frequency = "weekly" | "fortnightly" | "monthly";
+type RepaymentType = "principal-interest" | "interest-only";
 
 interface Inputs {
   loanAmount: number;
   interestRate: number;
   loanTerm: number;
   frequency: Frequency;
+  repaymentType: RepaymentType;
 }
 
 interface AmortizationRow {
@@ -49,11 +51,48 @@ const PERIODS_PER_YEAR: Record<Frequency, number> = {
   monthly: 12,
 };
 
+interface BankRate {
+  bank: string;
+  variable: number;
+  fixed1yr: number;
+  fixed2yr: number;
+  fixed3yr: number;
+  comparison: number;
+}
+
+const BIG4_RATES: BankRate[] = [
+  { bank: "Commonwealth Bank", variable: 6.49, fixed1yr: 5.99, fixed2yr: 6.09, fixed3yr: 6.19, comparison: 6.58 },
+  { bank: "Westpac", variable: 6.44, fixed1yr: 5.89, fixed2yr: 6.04, fixed3yr: 6.14, comparison: 6.53 },
+  { bank: "ANZ", variable: 6.39, fixed1yr: 5.94, fixed2yr: 6.14, fixed3yr: 6.24, comparison: 6.50 },
+  { bank: "NAB", variable: 6.44, fixed1yr: 5.84, fixed2yr: 5.99, fixed3yr: 6.09, comparison: 6.54 },
+];
+
 function calculateMortgage(inputs: Inputs): CalcResult {
-  const { loanAmount, interestRate, loanTerm, frequency } = inputs;
+  const { loanAmount, interestRate, loanTerm, frequency, repaymentType } = inputs;
   const periodsPerYear = PERIODS_PER_YEAR[frequency];
   const totalPeriods = loanTerm * periodsPerYear;
   const periodicRate = interestRate / 100 / periodsPerYear;
+
+  if (repaymentType === "interest-only") {
+    const interestPayment = periodicRate === 0 ? 0 : loanAmount * periodicRate;
+    const schedule: AmortizationRow[] = [];
+    for (let i = 1; i <= totalPeriods; i++) {
+      schedule.push({
+        period: i,
+        payment: interestPayment,
+        principal: 0,
+        interest: interestPayment,
+        balance: loanAmount,
+      });
+    }
+    const totalPaid = interestPayment * totalPeriods;
+    return {
+      repayment: interestPayment,
+      totalInterest: totalPaid,
+      totalPaid: totalPaid + loanAmount,
+      schedule,
+    };
+  }
 
   if (periodicRate === 0) {
     const repayment = loanAmount / totalPeriods;
@@ -156,6 +195,21 @@ function InputPanel({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (years)</label>
+        <div className="flex gap-2 mb-2">
+          {[25, 30].map((term) => (
+            <button
+              key={term}
+              onClick={() => onChange({ ...inputs, loanTerm: term })}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                inputs.loanTerm === term
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {term} years
+            </button>
+          ))}
+        </div>
         <input
           type="number"
           value={inputs.loanTerm}
@@ -181,6 +235,37 @@ function InputPanel({
           ))}
         </select>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Repayment Type</label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onChange({ ...inputs, repaymentType: "principal-interest" })}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              inputs.repaymentType === "principal-interest"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Principal & Interest
+          </button>
+          <button
+            onClick={() => onChange({ ...inputs, repaymentType: "interest-only" })}
+            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              inputs.repaymentType === "interest-only"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Interest Only
+          </button>
+        </div>
+        {inputs.repaymentType === "interest-only" && (
+          <p className="text-xs text-amber-600 mt-1">
+            Interest-only loans do not reduce the principal. The full loan amount remains owing at term end.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -195,12 +280,72 @@ function ResultCard({ label, value, subtext }: { label: string; value: string; s
   );
 }
 
-export default function MortgageCalculator() {
+function BankRatesTable({ onSelectRate }: { onSelectRate: (rate: number) => void }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 className="font-semibold text-gray-800">Big 4 Bank Reference Rates</h3>
+        <p className="text-xs text-gray-500 mt-1">
+          Owner-occupier, P&I, $250k+ loan. Rates are indicative only and may change.
+          Always confirm with your lender. Last updated March 2026.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Bank</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">Variable</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">1yr Fixed</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">2yr Fixed</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">3yr Fixed</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">Comparison*</th>
+              <th className="px-4 py-3 text-center font-medium text-gray-600">Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BIG4_RATES.map((bank) => (
+              <tr key={bank.bank} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-800">{bank.bank}</td>
+                <td className="px-4 py-3 text-right">{bank.variable.toFixed(2)}%</td>
+                <td className="px-4 py-3 text-right">{bank.fixed1yr.toFixed(2)}%</td>
+                <td className="px-4 py-3 text-right">{bank.fixed2yr.toFixed(2)}%</td>
+                <td className="px-4 py-3 text-right">{bank.fixed3yr.toFixed(2)}%</td>
+                <td className="px-4 py-3 text-right text-gray-500">{bank.comparison.toFixed(2)}%</td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() => onSelectRate(bank.variable)}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+                    title={`Use ${bank.bank}'s variable rate`}
+                  >
+                    Apply
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+        <p className="text-xs text-gray-400">
+          *Comparison rate based on $150,000 loan over 25 years. WARNING: This comparison rate applies only to the example given. Different loan amounts and terms will result in different comparison rates. Costs such as redraw fees and early repayment costs are not included.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function MortgageCalculator({
+  defaultLoanAmount = 500000,
+}: {
+  defaultLoanAmount?: number;
+}) {
   const [inputs, setInputs] = useState<Inputs>({
-    loanAmount: 500000,
-    interestRate: 6.5,
+    loanAmount: defaultLoanAmount,
+    interestRate: 6.2,
     loanTerm: 30,
     frequency: "monthly",
+    repaymentType: "principal-interest",
   });
 
   const [compareMode, setCompareMode] = useState(false);
@@ -209,9 +354,11 @@ export default function MortgageCalculator() {
     interestRate: 5.5,
     loanTerm: 30,
     frequency: "monthly",
+    repaymentType: "principal-interest",
   });
 
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showBankRates, setShowBankRates] = useState(false);
 
   const result = useMemo(() => calculateMortgage(inputs), [inputs]);
   const result2 = useMemo(() => (compareMode ? calculateMortgage(inputs2) : null), [compareMode, inputs2]);
@@ -247,7 +394,6 @@ export default function MortgageCalculator() {
   }, [result, result2, inputs.frequency, inputs.loanTerm, inputs2.frequency]);
 
   const schedulePage = useMemo(() => {
-    // Show yearly summary for the amortization table
     const periodsPerYear = PERIODS_PER_YEAR[inputs.frequency];
     const yearly: { year: number; totalPayment: number; totalPrincipal: number; totalInterest: number; endBalance: number }[] = [];
 
@@ -276,15 +422,28 @@ export default function MortgageCalculator() {
           {compareMode && <InputPanel inputs={inputs2} onChange={setInputs2} label="Scenario B" />}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-4">
           <button
             onClick={() => setCompareMode(!compareMode)}
             className="text-sm text-blue-700 hover:text-blue-900 font-medium transition-colors"
           >
-            {compareMode ? "✕ Remove comparison" : "＋ Compare a second scenario"}
+            {compareMode ? "Remove comparison" : "Compare a second scenario"}
+          </button>
+          <button
+            onClick={() => setShowBankRates(!showBankRates)}
+            className="text-sm text-blue-700 hover:text-blue-900 font-medium transition-colors"
+          >
+            {showBankRates ? "Hide bank rates" : "View Big 4 bank rates"}
           </button>
         </div>
       </div>
+
+      {/* Bank Rates */}
+      {showBankRates && (
+        <BankRatesTable
+          onSelectRate={(rate) => setInputs({ ...inputs, interestRate: rate })}
+        />
+      )}
 
       {/* Results */}
       <div className={`grid gap-6 ${compareMode ? "md:grid-cols-2" : ""}`}>
@@ -296,7 +455,11 @@ export default function MortgageCalculator() {
               value={formatCurrencyExact(result.repayment)}
             />
             <ResultCard label="Total Interest" value={formatCurrency(result.totalInterest)} />
-            <ResultCard label="Total Amount Paid" value={formatCurrency(result.totalPaid)} />
+            <ResultCard
+              label="Total Amount Paid"
+              value={formatCurrency(result.totalPaid)}
+              subtext={inputs.repaymentType === "interest-only" ? "Interest + principal owing" : undefined}
+            />
           </div>
         </div>
 
@@ -309,11 +472,27 @@ export default function MortgageCalculator() {
                 value={formatCurrencyExact(result2.repayment)}
               />
               <ResultCard label="Total Interest" value={formatCurrency(result2.totalInterest)} />
-              <ResultCard label="Total Amount Paid" value={formatCurrency(result2.totalPaid)} />
+              <ResultCard
+                label="Total Amount Paid"
+                value={formatCurrency(result2.totalPaid)}
+                subtext={inputs2.repaymentType === "interest-only" ? "Interest + principal owing" : undefined}
+              />
             </div>
           </div>
         )}
       </div>
+
+      {/* Interest-only warning */}
+      {inputs.repaymentType === "interest-only" && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <h3 className="font-semibold text-amber-900 mb-1">Interest-Only Loan</h3>
+          <p className="text-sm text-amber-800">
+            You will still owe the full <strong>{formatCurrency(inputs.loanAmount)}</strong> at the end
+            of the {inputs.loanTerm}-year term. Interest-only periods are typically 1-5 years, after which
+            the loan reverts to principal and interest repayments at a higher amount.
+          </p>
+        </div>
+      )}
 
       {/* Comparison savings */}
       {compareMode && result2 && (

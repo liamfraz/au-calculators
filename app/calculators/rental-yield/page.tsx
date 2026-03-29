@@ -1,0 +1,150 @@
+import type { Metadata } from "next";
+import RentalYieldCalculator from "./calculator";
+import AdUnit from "../../components/AdUnit";
+
+export const metadata: Metadata = {
+  title: "Rental Yield Calculator Australia 2026 | Gross & Net Yield",
+  description:
+    "Free Australian rental yield calculator. Calculate gross and net rental yield from purchase price and weekly rent. Compare investment property returns across Australian suburbs.",
+  keywords: [
+    "rental yield calculator australia",
+    "rental yield calculator",
+    "gross rental yield",
+    "net rental yield",
+    "investment property yield",
+    "rental return calculator",
+    "property yield calculator australia",
+    "rental yield formula",
+  ],
+  openGraph: {
+    title: "Rental Yield Calculator Australia 2026 — Gross & Net Yield",
+    description:
+      "Calculate gross and net rental yield for Australian investment properties. Compare yields and estimate annual returns.",
+    type: "website",
+  },
+};
+
+const faqs = [
+  {
+    question: "What is a good rental yield in Australia?",
+    answer:
+      "In Australia, a gross rental yield of 4-5% is considered average for metropolitan areas. A yield above 5% is generally considered good, while yields above 7% are excellent but may come with higher risk or be found in regional areas. Capital cities like Sydney and Melbourne typically have lower yields (2-4%) due to high property prices, while regional areas and cities like Darwin and Perth often offer higher yields. The best yield depends on your investment strategy — some investors prefer lower yields in high-growth areas for capital gains.",
+  },
+  {
+    question: "How do you calculate rental yield?",
+    answer:
+      "Gross rental yield is calculated by dividing the annual rental income by the property's purchase price, then multiplying by 100 to get a percentage. The formula is: Gross Yield = (Annual Rent / Purchase Price) x 100. For example, if you buy a property for $500,000 and receive $500 per week in rent ($26,000 per year), the gross yield is (26,000 / 500,000) x 100 = 5.2%. Net rental yield subtracts annual expenses from the rent before dividing by the purchase price.",
+  },
+  {
+    question:
+      "What is the difference between gross and net rental yield?",
+    answer:
+      "Gross rental yield only considers the rental income relative to the purchase price — it does not account for any expenses. Net rental yield deducts all annual property expenses (such as council rates, insurance, maintenance, management fees, strata levies, and water rates) from the rental income before calculating the percentage. Net yield gives a more accurate picture of your actual return. For example, a property with 5% gross yield might only deliver 3-3.5% net yield after expenses.",
+  },
+  {
+    question: "What expenses reduce net rental yield?",
+    answer:
+      "Common expenses that reduce net rental yield include: council rates ($1,500-$3,000/year), landlord insurance ($1,000-$2,000/year), maintenance and repairs ($2,000-$5,000/year), property management fees (typically 7-10% of rent), strata or body corporate fees ($1,000-$8,000+/year for units), water rates ($500-$1,200/year), land tax (varies by state and value), and vacancy costs. These expenses can easily reduce your gross yield by 1.5-3 percentage points.",
+  },
+  {
+    question:
+      "Which Australian cities have the highest rental yields?",
+    answer:
+      "Among capital cities, Darwin and Perth have historically offered the highest rental yields, often exceeding 5-6% gross. Regional areas across Australia frequently deliver even higher yields — towns in regional Queensland, Western Australia, and Tasmania can offer 7-10%+ gross yields. However, higher yields in regional areas may come with higher vacancy risk and slower capital growth. Sydney and Melbourne typically have the lowest yields (2-4%) but have historically delivered stronger long-term capital growth.",
+  },
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Australian Rental Yield Calculator 2026",
+  description:
+    "Free rental yield calculator for Australian investment properties. Calculate gross and net rental yield from purchase price and weekly rent.",
+  url: "https://au-calculators.vercel.app/calculators/rental-yield",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Any",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "AUD",
+  },
+  author: {
+    "@type": "Organization",
+    name: "AU Calculators",
+  },
+};
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+
+export default function RentalYieldPage() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Australian Rental Yield Calculator 2026
+          </h1>
+          <p className="text-gray-600">
+            Calculate gross and net rental yield for Australian investment
+            properties. Enter your purchase price, weekly rent, and annual
+            expenses to see your true rental return.
+          </p>
+        </div>
+
+        {/* Ad: Above calculator */}
+        <AdUnit slot="above-calculator" format="horizontal" className="mb-6" />
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex-1 min-w-0">
+            <RentalYieldCalculator />
+
+            {/* Ad: Below results */}
+            <AdUnit slot="below-results" format="horizontal" className="mt-8" />
+          </div>
+
+          {/* Sidebar ad: Desktop only */}
+          <aside className="hidden lg:block w-[300px] shrink-0">
+            <div className="sticky top-24">
+              <AdUnit slot="sidebar" format="vertical" />
+            </div>
+          </aside>
+        </div>
+
+        {/* FAQ Section */}
+        <section className="mt-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.question} className="border border-gray-200 rounded-xl p-6">
+                <h3 className="font-semibold text-gray-900 mb-2">{faq.question}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
