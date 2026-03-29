@@ -17,9 +17,6 @@ import {
 
 const MEDICARE_LEVY_RATE = 0.02;
 const CONCESSIONAL_CAP = 30000;
-const SG_RATE = 0.115; // 11.5% for FY2025-26
-const DEFAULT_GROWTH_RATE = 0.07;
-
 const TAX_BRACKETS_2026 = [
   { min: 0, max: 18200, rate: 0, base: 0 },
   { min: 18201, max: 45000, rate: 0.16, base: 0 },
@@ -149,14 +146,6 @@ export default function SalarySacrificeCalculator() {
 
     // Per-dollar benefit: for each $1 sacrificed, you pay 15% super tax instead of marginal rate
     const taxSavingPerDollar = effectiveRate - 0.15;
-
-    // Comparison: salary sacrifice vs after-tax contribution
-    // After-tax contribution: you pay full income tax, then contribute from after-tax money
-    // You get no upfront tax deduction (unless claiming as personal deduction)
-    const afterTaxCostOfSacrifice = cappedSacrifice - personalTaxSaved; // net cost to your pocket
-    const afterTaxContributionSameAmount = cappedSacrifice; // costs full amount from after-tax pay
-    // With after-tax contribution, you keep your full take-home but contribute from it
-    const afterTaxContributionFromPocket = cappedSacrifice; // dollar for dollar from after-tax
 
     // Super balance projection
     const growthRate = inputs.investmentReturn / 100;
