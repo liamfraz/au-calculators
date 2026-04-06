@@ -19,7 +19,9 @@ const siteJsonLd = {
     name: "AU Calculators",
   },
   featureList: [
+    "Income Tax Calculator 2025-26",
     "Mortgage Repayment Calculator",
+    "Mortgage Offset Calculator",
     "Stamp Duty Calculator — All States",
     "Income Tax & PAYG Withholding Calculator",
     "Car Loan Calculator",
@@ -30,10 +32,13 @@ const siteJsonLd = {
     "Centrelink Payment Estimator",
     "Rental Yield Calculator",
     "Property Cash Flow Calculator",
+    "Investment Property Cash Flow Calculator",
     "Land Tax Calculator",
     "Depreciation Schedule Estimator",
     "Energy Bill Calculator",
+    "Age Pension Calculator",
     "Super Contribution Calculator",
+    "Child Care Subsidy Calculator",
     "BMI Calculator",
   ],
 };
@@ -49,12 +54,28 @@ interface Calculator {
 
 const calculators: Calculator[] = [
   {
+    title: "Income Tax Calculator 2025-26",
+    description:
+      "Calculate your Australian income tax, Medicare levy, HELP repayments, and net take-home pay using official ATO 2025-26 tax brackets. See your Stage 3 tax cut savings with a detailed bracket-by-bracket breakdown.",
+    href: "/calculators/income-tax",
+    icon: "💰",
+    tags: ["Income Tax", "ATO 2025-26", "Take-Home Pay"],
+  },
+  {
     title: "Mortgage Repayment Calculator",
     description:
       "Calculate your home loan repayments, total interest, and view an amortization schedule. Compare different rates and terms side by side.",
     href: "/calculators/mortgage-repayment",
     icon: "🏠",
     tags: ["Home Loan", "Interest", "Amortization"],
+  },
+  {
+    title: "Mortgage Offset Calculator",
+    description:
+      "See how much interest an offset account saves on your home loan. Compare offset vs redraw, view AU bank offset products, and calculate time saved.",
+    href: "/calculators/mortgage-offset",
+    icon: "🏦",
+    tags: ["Offset Account", "Interest Saved", "Redraw"],
   },
   {
     title: "Car Loan Calculator",
@@ -129,6 +150,14 @@ const calculators: Calculator[] = [
     tags: ["Cash Flow", "Investment Property", "Expenses"],
   },
   {
+    title: "Investment Property Cash Flow Calculator",
+    description:
+      "Calculate gross yield, net yield, cash-on-cash return, break-even rent, and negative gearing tax benefits. Full property investment analysis with 2025-26 ATO tax brackets.",
+    href: "/calculators/investment-property-cashflow",
+    icon: "🏠",
+    tags: ["Cash Flow", "Yields", "Negative Gearing"],
+  },
+  {
     title: "Land Tax Calculator",
     description:
       "Calculate land tax for all Australian states using 2025-2026 thresholds and rates. Compare land tax across states with trust and absentee surcharges.",
@@ -175,6 +204,22 @@ const calculators: Calculator[] = [
     href: "/bmi-calculator",
     icon: "⚖️",
     tags: ["BMI", "Healthy Weight", "Health"],
+  },
+  {
+    title: "Age Pension Calculator",
+    description:
+      "Calculate your Centrelink Age Pension using 2025-26 income test and assets test thresholds. Shows fortnightly and annual rates for singles and couples.",
+    href: "/calculators/age-pension",
+    icon: "\uD83C\uDFE6",
+    tags: ["Age Pension", "Income Test", "Assets Test"],
+  },
+  {
+    title: "Child Care Subsidy Calculator",
+    description:
+      "Calculate your CCS percentage, subsidised hours, gap fees, and annual out-of-pocket childcare costs. Uses 2025-26 income tiers and activity test.",
+    href: "/calculators/child-care-subsidy",
+    icon: "\uD83D\uDC76",
+    tags: ["CCS", "Childcare", "Gap Fee"],
   },
   {
     title: "Centrelink Payment Estimator",

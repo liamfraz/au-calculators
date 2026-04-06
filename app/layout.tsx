@@ -131,6 +131,12 @@ export default function RootLayout({
                 Neg. Gearing
               </Link>
               <Link
+                href="/calculators/investment-property-cashflow"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Inv. Property
+              </Link>
+              <Link
                 href="/calculators/gst"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
@@ -143,16 +149,34 @@ export default function RootLayout({
                 Savings
               </Link>
               <Link
+                href="/calculators/income-tax"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Income Tax
+              </Link>
+              <Link
                 href="/tax-withholding-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
-                Tax
+                PAYG
               </Link>
               <Link
                 href="/salary-sacrifice-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
                 Sal. Sacrifice
+              </Link>
+              <Link
+                href="/calculators/age-pension"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Pension
+              </Link>
+              <Link
+                href="/calculators/child-care-subsidy"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Childcare
               </Link>
               <Link
                 href="/bmi-calculator"

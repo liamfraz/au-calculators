@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type EntityType = "individual" | "company" | "smsf" | "trust";
 type TaxInputMode = "income" | "rate";
@@ -660,6 +661,55 @@ export default function CapitalGainsTaxCalculator() {
               Medicare levy of 2% is not included. Company base rate is 25%. SMSF rate is 15%.
               Consult a tax professional for your specific situation.
             </p>
+          </div>
+
+          {/* Related Calculators */}
+          <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
+            <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                href="/stamp-duty-calculator"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+              <Link
+                href="/calculators/investment-property-cashflow"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Investment Property Cash Flow</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+              <Link
+                href="/tax-withholding-calculator"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Income Tax / PAYG Calculator</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+              <Link
+                href="/calculators/negative-gearing"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Negative Gearing Calculator</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+              <Link
+                href="/calculators/depreciation"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Depreciation Schedule Estimator</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+              <Link
+                href="/calculators/rental-yield"
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <span className="text-blue-600 font-medium">Rental Yield Calculator</span>
+                <span className="text-gray-400 ml-auto">→</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}

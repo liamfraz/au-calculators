@@ -182,11 +182,17 @@ const OFFSET_PRODUCTS = [
 
 // --- Component ---
 
-export default function MortgageOffsetCalculator() {
-  const [loanAmount, setLoanAmount] = useState(600000);
+export default function MortgageOffsetCalculator({
+  defaultLoanAmount = 600000,
+  defaultOffsetBalance = 50000,
+}: {
+  defaultLoanAmount?: number;
+  defaultOffsetBalance?: number;
+} = {}) {
+  const [loanAmount, setLoanAmount] = useState(defaultLoanAmount);
   const [interestRate, setInterestRate] = useState(6.5);
   const [loanTerm, setLoanTerm] = useState(30);
-  const [offsetBalance, setOffsetBalance] = useState(50000);
+  const [offsetBalance, setOffsetBalance] = useState(defaultOffsetBalance);
   const [showComparison, setShowComparison] = useState(false);
 
   const results = useMemo(
@@ -218,12 +224,12 @@ export default function MortgageOffsetCalculator() {
                 id="loanAmount"
                 type="number"
                 min={100000}
-                max={2000000}
+                max={5000000}
                 step={10000}
                 value={loanAmount}
                 onChange={(e) =>
                   setLoanAmount(
-                    Math.max(100000, Math.min(2000000, Number(e.target.value)))
+                    Math.max(100000, Math.min(5000000, Number(e.target.value)))
                   )
                 }
                 className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -232,7 +238,7 @@ export default function MortgageOffsetCalculator() {
             <input
               type="range"
               min={100000}
-              max={2000000}
+              max={5000000}
               step={10000}
               value={loanAmount}
               onChange={(e) => setLoanAmount(Number(e.target.value))}
@@ -240,7 +246,7 @@ export default function MortgageOffsetCalculator() {
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>$100K</span>
-              <span>$2M</span>
+              <span>$5M</span>
             </div>
           </div>
 
@@ -344,12 +350,12 @@ export default function MortgageOffsetCalculator() {
                 id="offsetBalance"
                 type="number"
                 min={0}
-                max={500000}
+                max={1000000}
                 step={5000}
                 value={offsetBalance}
                 onChange={(e) =>
                   setOffsetBalance(
-                    Math.max(0, Math.min(500000, Number(e.target.value)))
+                    Math.max(0, Math.min(1000000, Number(e.target.value)))
                   )
                 }
                 className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -358,7 +364,7 @@ export default function MortgageOffsetCalculator() {
             <input
               type="range"
               min={0}
-              max={500000}
+              max={1000000}
               step={5000}
               value={offsetBalance}
               onChange={(e) => setOffsetBalance(Number(e.target.value))}
@@ -366,7 +372,7 @@ export default function MortgageOffsetCalculator() {
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>$0</span>
-              <span>$500K</span>
+              <span>$1M</span>
             </div>
           </div>
         </div>

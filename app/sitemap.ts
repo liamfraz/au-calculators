@@ -4,6 +4,7 @@ import { SUBURBS as STAMP_DUTY_SUBURBS } from "./stamp-duty-calculator/suburbs/d
 import { SUBURBS as CAR_LOAN_SUBURBS } from "./calculators/car-loan/suburbs";
 import { SUBURBS as ENERGY_BILL_SUBURBS } from "./calculators/energy-bill/suburbs";
 import { SUBURBS as MORTGAGE_OFFSET_SUBURBS } from "./calculators/mortgage-offset/suburbs";
+import { SUBURBS as RENTAL_YIELD_SUBURBS } from "./calculators/rental-yield/suburbs";
 import { SUBURBS as SUBURB_HUB_PAGES } from "./suburbs/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -24,6 +25,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 1,
+    },
+    {
+      url: `${baseUrl}/calculators/income-tax`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/calculators/mortgage-repayment`,
@@ -213,6 +220,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/calculators/age-pension`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/calculators/child-care-subsidy`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/centrelink-payment-estimator`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -250,6 +269,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...MORTGAGE_OFFSET_SUBURBS.map((s) => ({
       url: `${baseUrl}/calculators/mortgage-offset/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    ...RENTAL_YIELD_SUBURBS.map((s) => ({
+      url: `${baseUrl}/calculators/rental-yield/${s.slug}`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,

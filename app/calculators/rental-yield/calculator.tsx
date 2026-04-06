@@ -90,9 +90,17 @@ function calcResults(p: PropertyInputs) {
 
 // --- Component ---
 
-export default function RentalYieldCalculator() {
-  const [purchasePrice, setPurchasePrice] = useState(500000);
-  const [weeklyRent, setWeeklyRent] = useState(500);
+interface RentalYieldCalculatorProps {
+  defaultPurchasePrice?: number;
+  defaultWeeklyRent?: number;
+}
+
+export default function RentalYieldCalculator({
+  defaultPurchasePrice = 500000,
+  defaultWeeklyRent = 500,
+}: RentalYieldCalculatorProps = {}) {
+  const [purchasePrice, setPurchasePrice] = useState(defaultPurchasePrice);
+  const [weeklyRent, setWeeklyRent] = useState(defaultWeeklyRent);
   const [councilRates, setCouncilRates] = useState(2000);
   const [insurance, setInsurance] = useState(1500);
   const [maintenance, setMaintenance] = useState(2000);
