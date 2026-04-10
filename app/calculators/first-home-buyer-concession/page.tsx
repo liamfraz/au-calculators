@@ -106,7 +106,7 @@ export default function FirstHomeBuyerConcessionPage() {
           </h1>
           <p className="text-gray-600">
             Calculate your first home buyer stamp duty concession or exemption across all Australian
-            states and territories. Compare the benefit of each state's FHB scheme using official
+            states and territories. Compare the benefit of each state&apos;s FHB scheme using official
             2025–2026 rates.
           </p>
         </div>
