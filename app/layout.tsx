@@ -107,6 +107,12 @@ export default function RootLayout({
                 Stamp Duty
               </Link>
               <Link
+                href="/calculators/first-home-buyer-concession"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                FHB Concession
+              </Link>
+              <Link
                 href="/calculators/rental-yield"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >

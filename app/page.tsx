@@ -94,6 +94,14 @@ const calculators: Calculator[] = [
     tags: ["Property", "Transfer Duty", "All States"],
   },
   {
+    title: "First Home Buyer Stamp Duty Concession Calculator",
+    description:
+      "Calculate your stamp duty concession as a first home buyer. Covers all Australian states and territories with 2025–2026 rates.",
+    href: "/calculators/first-home-buyer-concession",
+    icon: "🏠",
+    tags: ["Property", "Tax", "First Home", "Stamp Duty"],
+  },
+  {
     title: "Income Tax Calculator",
     description:
       "Calculate your Australian income tax, PAYG withholding, Medicare levy, HELP repayments, and net take-home pay using 2025-26 ATO tax brackets.",
