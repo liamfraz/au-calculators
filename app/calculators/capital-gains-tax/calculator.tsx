@@ -666,6 +666,39 @@ export default function CapitalGainsTaxCalculator() {
             </div>
           </div>
 
+          {/* Recommended Tools */}
+          <div className="mt-6 border border-gray-200 rounded-xl p-6 bg-gray-50">
+            <h3 className="font-semibold text-gray-900 text-base mb-1">Recommended Tools</h3>
+            <p className="text-sm text-gray-500 mb-4">Track your portfolio and simplify tax time.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a
+                href="https://www.sharesight.com/au/"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">Sharesight</p>
+                  <p className="text-xs text-gray-500">Automatic portfolio tracking &amp; CGT reports</p>
+                </div>
+                <span className="text-blue-500 text-lg">→</span>
+              </a>
+              <a
+                href="https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">ATO CGT Guide</p>
+                  <p className="text-xs text-gray-500">Official ATO capital gains tax rules</p>
+                </div>
+                <span className="text-blue-500 text-lg">→</span>
+              </a>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">We may earn a commission if you use the Sharesight link. ATO links are not sponsored.</p>
+          </div>
+
           {/* 50% CGT Discount explanation */}
           <div className="bg-green-50 border border-green-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-green-900 mb-3">

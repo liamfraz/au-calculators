@@ -654,6 +654,51 @@ export default function StampDutyCalculator({
         </div>
       </div>
 
+      {/* Recommended Tools */}
+      <div className="mt-6 border border-gray-200 rounded-xl p-6 bg-gray-50">
+        <h3 className="font-semibold text-gray-900 text-base mb-1">Recommended Tools</h3>
+        <p className="text-sm text-gray-500 mb-4">Resources for first home buyers and property purchasers.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <a
+            href="https://www.nhfic.gov.au/support-buy-home"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">First Home Guarantee</p>
+              <p className="text-xs text-gray-500">Government scheme — buy with 5% deposit</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.revenue.nsw.gov.au/grants-schemes/first-home-buyer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">First Home Owner Grant</p>
+              <p className="text-xs text-gray-500">Check your state&apos;s FHOG eligibility</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.lendi.com.au/first-home-buyers/"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Lendi</p>
+              <p className="text-xs text-gray-500">First home buyer home loans</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">We may earn a commission if you use the Lendi link. Government links are not sponsored.</p>
+      </div>
+
       {/* Related Calculators */}
       <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>

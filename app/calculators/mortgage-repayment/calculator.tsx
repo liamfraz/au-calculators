@@ -601,6 +601,51 @@ export default function MortgageCalculator({
         )}
       </div>
 
+      {/* Recommended Tools */}
+      <div className="mt-6 border border-gray-200 rounded-xl p-6 bg-gray-50">
+        <h3 className="font-semibold text-gray-900 text-base mb-1">Recommended Tools</h3>
+        <p className="text-sm text-gray-500 mb-4">Compare mortgage rates and find the right loan for you.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <a
+            href="https://www.lendi.com.au"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Lendi</p>
+              <p className="text-xs text-gray-500">Online mortgage broker</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.uno.com.au"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Uno Home Loans</p>
+              <p className="text-xs text-gray-500">Find &amp; compare home loans</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.canstar.com.au/home-loans/"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Canstar</p>
+              <p className="text-xs text-gray-500">Compare 100+ lenders</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">We may earn a commission if you use these links. This does not affect our editorial independence.</p>
+      </div>
+
       {/* Related Calculators */}
       <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>

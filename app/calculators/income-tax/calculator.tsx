@@ -793,6 +793,51 @@ export default function IncomeTaxCalculator() {
         </div>
       )}
 
+      {/* Recommended Tools */}
+      <div className="mt-6 border border-gray-200 rounded-xl p-6 bg-gray-50">
+        <h3 className="font-semibold text-gray-900 text-base mb-1">Recommended Tools</h3>
+        <p className="text-sm text-gray-500 mb-4">Lodging your tax return? These tools can help.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <a
+            href="https://www.hrblock.com.au/online-tax-return"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">H&amp;R Block Online</p>
+              <p className="text-xs text-gray-500">Lodge your tax return online</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.ato.gov.au/individuals-and-families/lodging-deductions-and-reporting/lodging-a-tax-return"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Lodge via myTax</p>
+              <p className="text-xs text-gray-500">Free ATO online lodgement</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">ATO Deductions Guide</p>
+              <p className="text-xs text-gray-500">What you can claim this year</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">We may earn a commission if you use the H&amp;R Block link. ATO links are not sponsored.</p>
+      </div>
+
       {/* ─── Related Calculators ─── */}
       <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Related Calculators</h3>

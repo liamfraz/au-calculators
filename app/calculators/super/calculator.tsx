@@ -654,6 +654,51 @@ export default function SuperCalculator() {
         </div>
       </div>
 
+      {/* Recommended Tools */}
+      <div className="mt-6 border border-gray-200 rounded-xl p-6 bg-gray-50">
+        <h3 className="font-semibold text-gray-900 text-base mb-1">Recommended Tools</h3>
+        <p className="text-sm text-gray-500 mb-4">Compare super funds and maximise your retirement savings.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <a
+            href="https://www.canstar.com.au/superannuation/"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Canstar Super Comparison</p>
+              <p className="text-xs text-gray-500">Compare super fund fees &amp; returns</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/find-and-consolidate-your-super"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">Find Lost Super</p>
+              <p className="text-xs text-gray-500">ATO — consolidate your super accounts</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+          <a
+            href="https://moneysmart.gov.au/grow-your-super"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">MoneySmart: Grow Your Super</p>
+              <p className="text-xs text-gray-500">Government tips to grow your balance</p>
+            </div>
+            <span className="text-blue-500 text-lg">→</span>
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">We may earn a commission if you use the Canstar link. Government links are not sponsored.</p>
+      </div>
+
       {/* Related Calculators */}
       <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
