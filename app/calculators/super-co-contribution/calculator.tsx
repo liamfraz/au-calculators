@@ -49,14 +49,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatCurrencyDecimal(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 export default function SuperCoContributionCalculator() {
   const [income, setIncome] = useState(42000);

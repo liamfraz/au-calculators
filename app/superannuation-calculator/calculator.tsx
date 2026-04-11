@@ -159,8 +159,6 @@ export default function SuperannuationRetirementCalculator() {
     (results.annualIncomeRetirement / asfalThreshold) * 100,
     100
   );
-  const asfalProgressColor =
-    asfalProgress >= 100 ? "bg-green-500" : asfalProgress >= 60 ? "bg-amber-500" : "bg-red-500";
   const asfalBgColor =
     asfalProgress >= 100
       ? "bg-green-50 border-green-200"
