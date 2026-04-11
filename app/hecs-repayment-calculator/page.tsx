@@ -4,7 +4,7 @@ import AdUnit from "../components/AdUnit";
 
 export const metadata: Metadata = {
   title:
-    "HECS Repayment Calculator 2026 | Free HELP Debt Calculator Australia",
+    "HECS Repayment Calculator 2026 — How Long Until You're Debt Free?",
   description:
     "Free HECS repayment calculator with 2025-26 ATO thresholds. Calculate your HELP debt repayments, monthly deductions, years to pay off, and total cost including indexation.",
   keywords: [
@@ -22,10 +22,13 @@ export const metadata: Metadata = {
     "help debt repayment rates",
   ],
   openGraph: {
-    title: "HECS Repayment Calculator 2026 | HELP Debt Calculator Australia",
+    title: "HECS Repayment Calculator 2026 — How Long Until You're Debt Free?",
     description:
       "Calculate your HECS-HELP repayments with 2025-26 ATO thresholds. See annual and monthly repayments, years to pay off, and how indexation affects your total cost.",
     type: "website",
+  },
+  alternates: {
+    canonical: "https://au-calculators.vercel.app/hecs-repayment-calculator",
   },
 };
 
@@ -105,15 +108,62 @@ export default function HecsRepaymentCalculatorPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
             HECS Repayment Calculator 2026
           </h1>
-          <p className="text-gray-600">
-            Calculate your HECS-HELP student loan repayments using the 2025-26
-            ATO repayment thresholds. See your annual and monthly repayments,
-            how many years until your debt is cleared, and the true cost of
-            indexation over time.
-          </p>
+          <div className="prose prose-gray max-w-none text-gray-600 space-y-3 text-sm leading-relaxed">
+            <p>
+              HECS-HELP (Higher Education Contribution Scheme — Higher Education
+              Loan Program) is the Australian Government&apos;s income-contingent
+              student loan scheme. If you studied at an approved higher education
+              provider — a university, TAFE, or registered private college — you
+              likely have a HELP debt sitting on your ATO account. As of 2025,
+              over 3 million Australians carry some form of HELP debt, with the
+              average balance around $26,000.
+            </p>
+            <p>
+              Unlike a personal loan or credit card, HECS-HELP carries no
+              interest. Instead, your debt is <strong>indexed annually on 1 June</strong>{" "}
+              to maintain its real value over time. Before 2023, indexation was
+              tied solely to the Consumer Price Index (CPI). Following widespread
+              concern when indexation hit 7.1% in 2023, the government
+              legislated a cap: from 2023 onwards, indexation is the{" "}
+              <strong>lower of CPI or the Wage Price Index (WPI)</strong>. This
+              means your debt grows more slowly when wages rise faster than
+              prices.
+            </p>
+            <p>
+              Repayments are <strong>compulsory</strong> once your repayment
+              income reaches the minimum threshold — <strong>$54,435 for
+              2025-26</strong>. Your repayment income includes taxable income
+              plus any net investment losses, reportable fringe benefits, and
+              reportable super contributions. The ATO calculates your repayment
+              rate as a percentage of your <em>total</em> repayment income (not
+              just the amount above the threshold), ranging from 1% at the
+              minimum threshold up to 10% for incomes above $159,664. Your
+              employer withholds the repayment through the PAYG system —
+              similar to income tax withholding.
+            </p>
+            <p>
+              One key question graduates ask is: <em>how long until I&apos;m debt
+              free?</em> The answer depends on three things — your current
+              balance, your salary trajectory, and annual indexation. This
+              calculator models all three. Enter your current HECS-HELP balance
+              (available at myGov &gt; ATO &gt; Tax), your gross annual income,
+              an expected salary growth rate, and an indexation rate assumption.
+              The calculator then projects your repayment schedule year by year,
+              showing exactly when your debt reaches zero and how much indexation
+              will add to your total repayment cost.
+            </p>
+            <p>
+              If you earn below the $54,435 threshold, no compulsory repayments
+              are required — but your debt will still be indexed each June. Many
+              graduates in this position choose to make <strong>voluntary
+              repayments</strong> to stay ahead of indexation. Note: the
+              government removed the 10% voluntary repayment bonus in 2022, so
+              voluntary repayments now reduce your balance dollar-for-dollar.
+            </p>
+          </div>
         </div>
 
         {/* Ad: Above calculator */}

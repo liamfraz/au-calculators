@@ -249,12 +249,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/superannuation-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/mortgage-rates`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     ...mortgageRatePages,
+    {
+      url: `${baseUrl}/hecs-repayment-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
     {
       url: `${baseUrl}/electricity-bill-calculator`,
       lastModified: new Date(),
