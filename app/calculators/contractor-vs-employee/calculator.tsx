@@ -597,7 +597,7 @@ export default function ContractorVsEmployeeCalculator() {
             {" "}(rate: {((payrollTaxByState[state]?.rate || 0) * 100).toFixed(2)}%)
           </p>
           <p className="text-xs">
-            Payroll tax applies when a single employer's total payroll exceeds
+            Payroll tax applies when a single employer&apos;s total payroll exceeds
             this threshold. For a small business with one employee, payroll tax
             is typically $0.
           </p>
@@ -660,7 +660,7 @@ export default function ContractorVsEmployeeCalculator() {
               <li>
                 <span className="font-semibold">Tax impact:</span> If PSI rules
                 apply, the ATO restricts deductions you can claim (e.g., home
-                office, certain super contributions, vehicle expenses). You're
+                office, certain super contributions, vehicle expenses). You&apos;re
                 taxed similarly to an employee, losing your tax advantage.
               </li>
               <li>
@@ -717,7 +717,7 @@ export default function ContractorVsEmployeeCalculator() {
               Xero — Small Business Accounting
             </h4>
             <p className="text-sm text-gray-600 mb-4">
-              Australia's leading accounting software. Perfect for contractors
+              Australia&apos;s leading accounting software. Perfect for contractors
               managing BAS, invoices, and annual tax.
             </p>
             <a
