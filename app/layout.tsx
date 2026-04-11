@@ -122,6 +122,18 @@ export default function RootLayout({
                 FHB Concession
               </Link>
               <Link
+                href="/calculators/first-home-owner-grant"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                FHOG
+              </Link>
+              <Link
+                href="/calculators/super-co-contribution"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Co-contrib
+              </Link>
+              <Link
                 href="/calculators/rental-yield"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
