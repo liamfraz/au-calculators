@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 interface AdUnitProps {
   slot: string;
   format?: "auto" | "horizontal" | "vertical" | "rectangle";
@@ -14,6 +16,14 @@ export default function AdUnit({
   className = "",
 }: AdUnitProps) {
   const adSenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+
+  useEffect(() => {
+    if (!adSenseId) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch {}
+  }, [adSenseId]);
 
   if (!adSenseId) {
     return (
@@ -34,11 +44,6 @@ export default function AdUnit({
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? "true" : "false"}
-      />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: "(adsbygoogle = window.adsbygoogle || []).push({});",
-        }}
       />
     </div>
   );
