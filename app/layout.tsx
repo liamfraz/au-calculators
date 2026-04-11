@@ -92,6 +92,12 @@ export default function RootLayout({
                 Super
               </Link>
               <Link
+                href="/calculators/smsf-balance-projection"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                SMSF
+              </Link>
+              <Link
                 href="/calculators/energy-bill"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
