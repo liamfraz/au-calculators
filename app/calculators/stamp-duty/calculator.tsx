@@ -70,10 +70,10 @@ function calcSA(value: number): number {
 function calcWA(value: number): number {
   if (value <= 0) return 0;
   if (value <= 120000) return value * 0.019;
-  if (value <= 150000) return 2280 + (value - 120000) * 0.0235;
-  if (value <= 200000) return 2985 + (value - 150000) * 0.0315;
-  if (value <= 725000) return 4560 + (value - 200000) * 0.045;
-  return 28185 + (value - 725000) * 0.0515;
+  if (value <= 300000) return 2280 + (value - 120000) * 0.0285;
+  if (value <= 500000) return 7410 + (value - 300000) * 0.038;
+  if (value <= 725000) return 15010 + (value - 500000) * 0.0475;
+  return 25697.5 + (value - 725000) * 0.0515;
 }
 
 function calcTAS(value: number): number {
@@ -652,6 +652,36 @@ export default function StampDutyCalculator({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Compare Home Loans CTA */}
+      <div className="border border-blue-200 bg-blue-50 rounded-xl p-6">
+        <h3 className="font-semibold text-blue-900 mb-1">Compare Home Loans from AU Lenders</h3>
+        <p className="text-sm text-blue-700 mb-4">
+          Find competitive home loan rates from Australia&apos;s leading banks and lenders.
+          Compare features, rates, and fees to find the right loan for your purchase.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="https://www.finder.com.au/home-loans"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm"
+          >
+            Compare Home Loans →
+          </a>
+          <a
+            href="https://www.lendi.com.au/"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm"
+          >
+            Lendi — Home Loan Broker →
+          </a>
+        </div>
+        <p className="text-xs text-blue-500 mt-3">
+          Sponsored — we may earn a commission if you apply through these links.
+        </p>
       </div>
 
       {/* Recommended Tools */}
