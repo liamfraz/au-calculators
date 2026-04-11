@@ -3,8 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 
+type AssetType = "shares" | "crypto" | "property" | "other";
 type EntityType = "individual" | "company" | "smsf" | "trust";
 type TaxInputMode = "income" | "rate";
+
+const ASSET_TYPES: { value: AssetType; label: string }[] = [
+  { value: "shares", label: "Shares / ETFs" },
+  { value: "crypto", label: "Cryptocurrency" },
+  { value: "property", label: "Property" },
+  { value: "other", label: "Other" },
+];
 
 const TAX_BRACKETS_2025_26 = [
   { min: 0, max: 18200, rate: 0 },
@@ -74,8 +82,10 @@ interface Results {
   taxableGain: number;
   marginalRate: number;
   estimatedTax: number;
+  netGainAfterTax: number;
   effectiveCgtRate: number;
   entityType: EntityType;
+  assetType: AssetType;
   isLoss: boolean;
   taxInputMode: TaxInputMode;
   taxWithoutGain: number;
@@ -83,6 +93,7 @@ interface Results {
 }
 
 export default function CapitalGainsTaxCalculator() {
+  const [assetType, setAssetType] = useState<AssetType>("shares");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
   const [salePrice, setSalePrice] = useState("");
@@ -117,8 +128,10 @@ export default function CapitalGainsTaxCalculator() {
         taxableGain: 0,
         marginalRate: 0,
         estimatedTax: 0,
+        netGainAfterTax: capitalGain,
         effectiveCgtRate: 0,
         entityType,
+        assetType,
         isLoss: capitalGain < 0,
         taxInputMode,
         taxWithoutGain: 0,
@@ -153,6 +166,7 @@ export default function CapitalGainsTaxCalculator() {
     }
 
     const effectiveCgtRate = capitalGain > 0 ? (estimatedTax / capitalGain) * 100 : 0;
+    const netGainAfterTax = capitalGain - estimatedTax;
 
     setResults({
       capitalGain,
@@ -163,8 +177,10 @@ export default function CapitalGainsTaxCalculator() {
       taxableGain,
       marginalRate,
       estimatedTax,
+      netGainAfterTax,
       effectiveCgtRate,
       entityType,
+      assetType,
       isLoss: false,
       taxInputMode,
       taxWithoutGain,
@@ -176,6 +192,23 @@ export default function CapitalGainsTaxCalculator() {
     <div>
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Asset Details</h2>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Asset Type
+          </label>
+          <select
+            value={assetType}
+            onChange={(e) => setAssetType(e.target.value as AssetType)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {ASSET_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div>
@@ -428,6 +461,12 @@ export default function CapitalGainsTaxCalculator() {
                     {formatCurrency(results.estimatedTax)}
                   </p>
                 </div>
+                <div>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">Net Gain After Tax</p>
+                  <p className="text-xl font-bold text-green-700">
+                    {formatCurrency(results.netGainAfterTax)}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -538,6 +577,10 @@ export default function CapitalGainsTaxCalculator() {
                     <td className="py-2">Estimated CGT Payable</td>
                     <td className="py-2 text-right">{formatCurrency(results.estimatedTax)}</td>
                   </tr>
+                  <tr className="font-semibold text-green-700">
+                    <td className="py-2">Net Gain After Tax</td>
+                    <td className="py-2 text-right">{formatCurrency(results.netGainAfterTax)}</td>
+                  </tr>
                   <tr>
                     <td className="py-2 text-gray-600">Effective CGT Rate</td>
                     <td className="py-2 text-right font-medium">
@@ -548,6 +591,14 @@ export default function CapitalGainsTaxCalculator() {
               </table>
             </div>
           )}
+
+          {/* Disclaimer */}
+          <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-4 flex gap-3">
+            <span className="text-yellow-600 text-lg shrink-0">⚠</span>
+            <p className="text-sm text-yellow-800">
+              <strong>This is an estimate</strong> — speak to a tax accountant for your specific situation. CGT calculations can be affected by losses carried forward, the main residence exemption, small business concessions, and other factors not captured here.
+            </p>
+          </div>
 
           {/* 50% CGT Discount explanation */}
           <div className="bg-green-50 border border-green-200 rounded-xl p-6">

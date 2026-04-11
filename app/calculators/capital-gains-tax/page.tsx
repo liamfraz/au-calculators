@@ -3,7 +3,7 @@ import CapitalGainsTaxCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
-  title: "Capital Gains Tax Calculator Australia 2026 | CGT Calculator",
+  title: "Capital Gains Tax Calculator Australia 2026 — Shares & Crypto",
   description:
     "Free Australian capital gains tax calculator. Calculate CGT on property, shares, and crypto with the 50% discount for assets held over 12 months. Uses 2025-26 ATO tax brackets.",
   keywords: [
