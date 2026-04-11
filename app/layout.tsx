@@ -182,6 +182,12 @@ export default function RootLayout({
                 Income Tax
               </Link>
               <Link
+                href="/calculators/contractor-vs-employee"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Contractor
+              </Link>
+              <Link
                 href="/tax-withholding-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >

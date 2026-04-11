@@ -12,6 +12,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// ─── Payroll Tax Config ───────────────────────────────────────────
+
+interface PayrollTaxConfig {
+  threshold: number;
+  rate: number;
+}
+
+const payrollTaxByState: Record<string, PayrollTaxConfig> = {
+  NSW: { threshold: 1200000, rate: 0.0545 },
+  VIC: { threshold: 700000, rate: 0.0485 },
+  QLD: { threshold: 1300000, rate: 0.0475 },
+  WA: { threshold: 1000000, rate: 0.055 },
+  SA: { threshold: 1500000, rate: 0.0495 },
+  TAS: { threshold: 2000000, rate: 0.061 },
+  ACT: { threshold: 2000000, rate: 0.0685 },
+  NT: { threshold: 1500000, rate: 0.055 },
+};
+
 // ─── ATO 2025-26 Tax Brackets (Resident) ──────────────────────────
 
 // ─── Calculation Functions ───────────────────────────────────────
@@ -87,7 +105,8 @@ interface ScenarioResult {
 function calcScenario(
   rate: number,
   superIncluded: boolean,
-  deductions: number
+  deductions: number,
+  hasABN: boolean
 ): ScenarioResult {
   // ─── Employee Scenario ───
   const grossSalary = rate;
@@ -113,12 +132,23 @@ function calcScenario(
     contractorSuperContrib = rate - contractorIncome;
   }
 
-  const taxableIncome = Math.max(0, contractorIncome - deductions);
-  const contractorGrossTax = calcTax(taxableIncome);
-  const contractorLITO = calcLITO(taxableIncome);
-  const contractorIncomeTax = Math.max(0, contractorGrossTax - contractorLITO);
-  const contractorMedicare = calcMedicare(taxableIncome);
-  const contractorTax = contractorIncomeTax + contractorMedicare;
+  // Apply 47% withholding if no ABN
+  let contractorTax = 0;
+  let contractorIncomeTax = 0;
+  let contractorMedicare = 0;
+
+  if (!hasABN) {
+    // 47% withholding applies
+    contractorTax = contractorIncome * 0.47;
+  } else {
+    const taxableIncome = Math.max(0, contractorIncome - deductions);
+    const contractorGrossTax = calcTax(taxableIncome);
+    const contractorLITO = calcLITO(taxableIncome);
+    contractorIncomeTax = Math.max(0, contractorGrossTax - contractorLITO);
+    contractorMedicare = calcMedicare(taxableIncome);
+    contractorTax = contractorIncomeTax + contractorMedicare;
+  }
+
   const contractorTakeHome = contractorIncome - contractorTax;
   const totalContractorPackage =
     contractorTakeHome + contractorSuperContrib;
@@ -147,27 +177,33 @@ function calcScenario(
 // ─── Component ────────────────────────────────────────────────────
 
 export default function ContractorVsEmployeeCalculator() {
+  const [incomeMode, setIncomeMode] = useState<"annual" | "dayrate">("annual");
   const [annualRate, setAnnualRate] = useState(100000);
+  const [dayRate, setDayRate] = useState(454.5);
+  const [daysPerYear, setDaysPerYear] = useState(220);
   const [state, setState] = useState("NSW");
   const [superIncluded, setSuperIncluded] = useState(false);
   const [hasABN, setHasABN] = useState(true);
   const [businessDeductions, setBusinessDeductions] = useState(5000);
 
+  // Calculate effective annual rate based on mode
+  const effectiveAnnualRate = incomeMode === "annual" ? annualRate : dayRate * daysPerYear;
+
   const scenario = useMemo(
-    () => calcScenario(annualRate, superIncluded, businessDeductions),
-    [annualRate, superIncluded, businessDeductions]
+    () => calcScenario(effectiveAnnualRate, superIncluded, businessDeductions, hasABN),
+    [effectiveAnnualRate, superIncluded, businessDeductions, hasABN]
   );
 
   const breakEvenRate = useMemo(() => {
     // Find the contractor rate needed to match total employee package
     // Binary search or iteration
     const targetPackage = scenario.totalEmployeePackage;
-    let low = annualRate * 0.8;
-    let high = annualRate * 2;
+    let low = effectiveAnnualRate * 0.8;
+    let high = effectiveAnnualRate * 2;
 
     for (let i = 0; i < 50; i++) {
       const mid = (low + high) / 2;
-      const testScenario = calcScenario(mid, superIncluded, businessDeductions);
+      const testScenario = calcScenario(mid, superIncluded, businessDeductions, hasABN);
       if (testScenario.totalContractorPackage < targetPackage) {
         low = mid;
       } else {
@@ -175,12 +211,12 @@ export default function ContractorVsEmployeeCalculator() {
       }
     }
     return (low + high) / 2;
-  }, [annualRate, superIncluded, businessDeductions, scenario.totalEmployeePackage]);
+  }, [effectiveAnnualRate, superIncluded, businessDeductions, hasABN, scenario.totalEmployeePackage]);
 
   const comparisonTableData = useMemo(() => {
     const incomes = [80000, 100000, 120000, 150000, 200000];
     return incomes.map((income) => {
-      const s = calcScenario(income, superIncluded, businessDeductions);
+      const s = calcScenario(income, superIncluded, businessDeductions, hasABN);
       return {
         income,
         employeeTakeHome: s.employeeTakeHome,
@@ -190,7 +226,7 @@ export default function ContractorVsEmployeeCalculator() {
         difference: s.contractorAdvantage,
       };
     });
-  }, [superIncluded, businessDeductions]);
+  }, [superIncluded, businessDeductions, hasABN]);
 
   const chartData = [
     {
@@ -228,24 +264,90 @@ export default function ContractorVsEmployeeCalculator() {
           Your Employment Details
         </h2>
 
+        {/* Income Mode Toggle */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Annual Salary / Contract Rate
+            Income Type
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-              $
-            </span>
-            <input
-              type="number"
-              value={annualRate || ""}
-              onChange={(e) => setAnnualRate(Number(e.target.value))}
-              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min={0}
-              step={1000}
-            />
+          <div className="flex gap-2">
+            {(["annual", "dayrate"] as const).map((val) => (
+              <button
+                key={val}
+                onClick={() => setIncomeMode(val)}
+                className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  incomeMode === val
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {val === "annual" ? "Annual Salary" : "Day Rate"}
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* Annual Salary Input */}
+        {incomeMode === "annual" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Annual Salary / Contract Rate
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                $
+              </span>
+              <input
+                type="number"
+                value={annualRate || ""}
+                onChange={(e) => setAnnualRate(Number(e.target.value))}
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                min={0}
+                step={1000}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Day Rate Inputs */}
+        {incomeMode === "dayrate" && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Day Rate
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  $
+                </span>
+                <input
+                  type="number"
+                  value={dayRate || ""}
+                  onChange={(e) => setDayRate(Number(e.target.value))}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={0}
+                  step={50}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Working Days per Year
+              </label>
+              <input
+                type="number"
+                value={daysPerYear || ""}
+                onChange={(e) => setDaysPerYear(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                min={0}
+                step={1}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Calculated annual: {fmt(dayRate * daysPerYear)}
+              </p>
+            </div>
+          </>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -357,7 +459,7 @@ export default function ContractorVsEmployeeCalculator() {
             <div className="flex justify-between border-b border-gray-200 pb-2">
               <span className="text-gray-700">Gross Salary</span>
               <span className="font-semibold text-gray-900">
-                {fmt(annualRate)}
+                {fmt(effectiveAnnualRate)}
               </span>
             </div>
             <div className="flex justify-between border-b border-gray-200 pb-2">
@@ -402,8 +504,8 @@ export default function ContractorVsEmployeeCalculator() {
               <span className="font-semibold text-gray-900">
                 {fmt(
                   superIncluded
-                    ? annualRate / 1.115
-                    : annualRate
+                    ? effectiveAnnualRate / 1.115
+                    : effectiveAnnualRate
                 )}
               </span>
             </div>
@@ -481,8 +583,43 @@ export default function ContractorVsEmployeeCalculator() {
         </ul>
       </div>
 
+      {/* ─── Payroll Tax Context Card ─── */}
+      <div className="border border-blue-200 rounded-xl p-6 bg-blue-50">
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">
+          Payroll Tax Context
+        </h3>
+        <div className="space-y-2 text-sm text-blue-800">
+          <p>
+            <span className="font-semibold">{state}</span> payroll tax threshold:{" "}
+            <span className="font-semibold">
+              {fmt(payrollTaxByState[state]?.threshold || 0)}
+            </span>
+            {" "}(rate: {((payrollTaxByState[state]?.rate || 0) * 100).toFixed(2)}%)
+          </p>
+          <p className="text-xs">
+            Payroll tax applies when a single employer's total payroll exceeds
+            this threshold. For a small business with one employee, payroll tax
+            is typically $0.
+          </p>
+        </div>
+      </div>
+
+      {/* ─── ABN Warning ─── */}
+      {!hasABN && (
+        <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
+          <p className="text-sm font-semibold text-red-900 mb-1">
+            No ABN: 47% Withholding Applied
+          </p>
+          <p className="text-sm text-red-800">
+            Without an ABN, payers must withhold 47% of all payments. This is
+            held by the ATO and credited at tax time, but significantly reduces
+            your cash flow. Register for an ABN to enable normal tax treatment.
+          </p>
+        </div>
+      )}
+
       {/* ─── Comparison Chart ─── */}
-      {annualRate > 0 && (
+      {effectiveAnnualRate > 0 && (
         <div className="border border-gray-200 rounded-xl p-6 bg-white">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Annual Breakdown
@@ -500,6 +637,107 @@ export default function ContractorVsEmployeeCalculator() {
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* ─── PSI (80/20 Rule) Info Card ─── */}
+      <div className="border border-amber-200 rounded-xl p-6 bg-amber-50">
+        <div className="flex gap-3">
+          <div className="text-amber-600 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-amber-900 mb-3">
+              Understanding the 80/20 Rule for Personal Services Income
+            </h3>
+            <ul className="space-y-2 text-sm text-amber-800">
+              <li>
+                <span className="font-semibold">What is PSI?</span> If more than
+                80% of your contractor income comes from a single client in an
+                income year, the ATO may classify your income as Personal
+                Services Income (PSI).
+              </li>
+              <li>
+                <span className="font-semibold">Tax impact:</span> If PSI rules
+                apply, the ATO restricts deductions you can claim (e.g., home
+                office, certain super contributions, vehicle expenses). You're
+                taxed similarly to an employee, losing your tax advantage.
+              </li>
+              <li>
+                <span className="font-semibold">How to avoid PSI:</span> Work
+                for multiple clients, employ staff, work from your own premises,
+                or establish a business structure (e.g., trust, company).
+              </li>
+              <li>
+                <a
+                  href="https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/personal-services-income"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-700 underline hover:text-amber-900 font-semibold"
+                >
+                  Learn more on the ATO website →
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Affiliate Links Section ─── */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Tools for Contractors & Freelancers
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+          {/* Rounded Card */}
+          <div className="border-2 border-blue-300 rounded-xl p-5 bg-white hover:shadow-lg transition-shadow">
+            <h4 className="text-base font-semibold text-gray-900 mb-2">
+              Rounded — Contractor Invoicing
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Purpose-built for Australian contractors. Create invoices, track
+              expenses, and manage your ABN in one place.
+            </p>
+            <a
+              href="https://rounded.com.au"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Try Rounded →
+            </a>
+            <p className="text-xs text-gray-500 mt-3">
+              Invoicing, expenses & tax for AU contractors
+            </p>
+          </div>
+
+          {/* Xero Card */}
+          <div className="border-2 border-green-300 rounded-xl p-5 bg-white hover:shadow-lg transition-shadow">
+            <h4 className="text-base font-semibold text-gray-900 mb-2">
+              Xero — Small Business Accounting
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Australia's leading accounting software. Perfect for contractors
+              managing BAS, invoices, and annual tax.
+            </p>
+            <a
+              href="https://www.xero.com/au/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+            >
+              Try Xero →
+            </a>
+            <p className="text-xs text-gray-500 mt-3">
+              BAS, invoicing & GST for Australian contractors
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 text-center">
+          These are partner links. We may earn a commission if you sign up, at
+          no extra cost to you.
+        </p>
+      </div>
 
       {/* ─── Comparison Table ─── */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
@@ -535,7 +773,7 @@ export default function ContractorVsEmployeeCalculator() {
                 <tr
                   key={row.income}
                   className={
-                    row.income === annualRate
+                    row.income === effectiveAnnualRate
                       ? "bg-blue-50 border-b border-gray-200"
                       : idx % 2 === 0
                       ? "border-b border-gray-200 bg-white"
@@ -544,6 +782,11 @@ export default function ContractorVsEmployeeCalculator() {
                 >
                   <td className="text-left px-4 py-2 font-semibold text-gray-900">
                     {fmt(row.income)}
+                    {row.income === effectiveAnnualRate && (
+                      <span className="text-xs text-blue-600 block">
+                        (current)
+                      </span>
+                    )}
                   </td>
                   <td className="text-right px-4 py-2 text-gray-700">
                     {fmt(row.employeeTakeHome)}

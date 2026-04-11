@@ -4,12 +4,14 @@ import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
   title:
-    "Contractor vs Employee Tax Calculator Australia 2025-26 | Compare Take-Home Pay",
+    "Contractor vs Employee Tax Calculator Australia 2026 | Compare Take-Home Pay",
   description:
-    "Compare take-home pay as a contractor vs employee in Australia. See PAYG vs estimated tax bill, super guarantee, leave entitlements, and which arrangement puts more money in your pocket.",
+    "Compare take-home pay as a contractor vs employee in Australia with our 2026 tax calculator. See PAYG vs estimated tax bill, super guarantee, leave entitlements, and which arrangement puts more money in your pocket. A contractor vs employee tax calculator Australia 2026 designed to help you make informed decisions.",
   keywords: [
     "contractor vs employee calculator",
     "contractor vs employee tax australia",
+    "contractor vs employee tax calculator australia",
+    "contractor vs employee 2026",
     "contractor take home pay",
     "employee vs contractor australia",
     "PAYG contractor tax",
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title:
-      "Contractor vs Employee Tax Calculator Australia 2025-26 | Compare Take-Home Pay",
+      "Contractor vs Employee Tax Calculator Australia 2026 | Compare Take-Home Pay",
     description:
       "Compare contractor vs employee take-home pay, super, and leave entitlements side-by-side.",
     type: "website",
@@ -87,7 +89,7 @@ const faqs = [
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Contractor vs Employee Tax Calculator Australia 2025-26",
+  name: "Contractor vs Employee Tax Calculator Australia 2026",
   description:
     "Compare take-home pay as a contractor vs employee in Australia. Calculate PAYG tax, super guarantee, leave entitlements, and see which arrangement puts more money in your pocket.",
   url: "https://au-calculators.vercel.app/calculators/contractor-vs-employee",
@@ -111,6 +113,10 @@ const jsonLd = {
     "Business deduction impact on contractor net income",
     "Net take-home pay: annual, monthly, and fortnightly",
     "Contractor rate needed to match employee salary",
+    "Day rate to annual salary conversion",
+    "Payroll tax by state information",
+    "Personal Services Income (PSI) 80/20 Rule guidance",
+    "47% withholding for contractors without ABN",
   ],
 };
 
@@ -165,7 +171,7 @@ export default function ContractorVsEmployeePage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Contractor vs Employee Tax Calculator Australia 2025&ndash;26
+            Contractor vs Employee Tax Calculator Australia 2025&ndash;2026
           </h1>
           <p className="text-gray-600">
             Compare your take-home pay as a contractor versus an employee side
