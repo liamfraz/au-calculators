@@ -194,6 +194,12 @@ export default function RootLayout({
                 Childcare
               </Link>
               <Link
+                href="/calculators/casual-to-permanent"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Casual Conv.
+              </Link>
+              <Link
                 href="/bmi-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
