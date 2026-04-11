@@ -177,7 +177,7 @@ export default function HecsRepaymentCalculator() {
   const [inputs, setInputs] = useState<Inputs>({
     helpDebt: 30000,
     annualIncome: 75000,
-    indexationRate: 3.2,
+    indexationRate: 4.7,
     salaryGrowthRate: 3,
   });
 
@@ -629,6 +629,27 @@ export default function HecsRepaymentCalculator() {
           )}
         </div>
       )}
+
+      {/* Affiliate CTA */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <h3 className="font-semibold text-blue-900 mb-1">
+          Get personalised HELP debt advice
+        </h3>
+        <p className="text-sm text-blue-800 mb-3">
+          Not sure whether to make voluntary repayments, salary sacrifice, or invest instead? A licensed financial adviser can help you make the right call.
+        </p>
+        <Link
+          href="https://www.moneysmart.gov.au/financial-advice/financial-advisers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+        >
+          Manage your HELP debt with a financial advisor →
+        </Link>
+        <p className="text-xs text-blue-600 mt-2">
+          ASIC MoneySmart — free government tool to find a licensed AU adviser
+        </p>
+      </div>
 
       {/* Related Calculators */}
       <div className="bg-gray-50 rounded-xl p-6">

@@ -268,6 +268,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/hecs-help-repayment-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/electricity-bill-calculator`,
       lastModified: new Date(),
       changeFrequency: "monthly",
