@@ -3,7 +3,7 @@ import StampDutyCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
-  title: "Stamp Duty Calculator Australia 2026 | Transfer Duty All States",
+  title: "Stamp Duty Calculator Australia 2026 — All States",
   description:
     "Free Australian stamp duty calculator for all states and territories. Calculate transfer duty for NSW, VIC, QLD, SA, WA, TAS, NT, and ACT. Compare stamp duty across states, apply first home buyer concessions, and see 2025-2026 rates.",
   keywords: [

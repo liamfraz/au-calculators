@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { StateCode, STATE_NAMES, ALL_STATES } from "./constants";
 
-type PropertyType = "primary" | "investment" | "vacant";
+type BuyerType = "first-home-buyer" | "owner-occupier" | "investor";
+type PropertyType = "established" | "new" | "vacant";
 
 // --- Stamp Duty Calculation Functions (2025-2026 FY rates) ---
 
@@ -69,20 +70,20 @@ function calcSA(value: number): number {
 function calcWA(value: number): number {
   if (value <= 0) return 0;
   if (value <= 120000) return value * 0.019;
-  if (value <= 150000) return 2280 + (value - 120000) * 0.0285;
-  if (value <= 360000) return 3135 + (value - 150000) * 0.038;
-  if (value <= 725000) return 11115 + (value - 360000) * 0.0475;
-  return 28453 + (value - 725000) * 0.0515;
+  if (value <= 150000) return 2280 + (value - 120000) * 0.0235;
+  if (value <= 200000) return 2985 + (value - 150000) * 0.0315;
+  if (value <= 725000) return 4560 + (value - 200000) * 0.045;
+  return 28185 + (value - 725000) * 0.0515;
 }
 
 function calcTAS(value: number): number {
   if (value <= 3000) return 50;
-  if (value <= 25000) return 50 + (value - 3000) * 0.0175;
-  if (value <= 75000) return 435 + (value - 25000) * 0.0225;
-  if (value <= 200000) return 1560 + (value - 75000) * 0.035;
-  if (value <= 375000) return 5935 + (value - 200000) * 0.04;
-  if (value <= 725000) return 12935 + (value - 375000) * 0.0425;
-  return 27810 + (value - 725000) * 0.045;
+  if (value <= 25000) return value * 0.0175;
+  if (value <= 75000) return 437.5 + (value - 25000) * 0.03;
+  if (value <= 200000) return 1937.5 + (value - 75000) * 0.035;
+  if (value <= 350000) return 6312.5 + (value - 200000) * 0.04;
+  if (value <= 725000) return 12312.5 + (value - 350000) * 0.0425;
+  return 28250 + (value - 725000) * 0.045;
 }
 
 function calcNT(value: number): number {
@@ -118,6 +119,35 @@ function calcACTInvestor(value: number): number {
   return value * 0.0454;
 }
 
+// --- Additional fees ---
+
+function getTransferFee(state: StateCode, value: number): number {
+  switch (state) {
+    case "NSW": return Math.round(142.5 + Math.min(Math.max(0, Math.floor((value - 50000) / 10000)) * 5.5, 7000));
+    case "VIC": return Math.round(120.9 + Math.floor(value / 10000) * 2.34);
+    case "QLD": return Math.min(Math.round(198 + Math.floor(value / 10000) * 1.78), 1614);
+    case "SA": return 179;
+    case "WA": return Math.round(168.5 + Math.min(Math.floor(value / 10000) * 0.8, 200));
+    case "TAS": return 243;
+    case "ACT": return Math.round(100 + Math.floor(value / 100000) * 30);
+    case "NT": return 143;
+  }
+}
+
+function getMortgageRegFee(state: StateCode): number {
+  const fees: Record<StateCode, number> = {
+    NSW: 161,
+    VIC: 121,
+    QLD: 198,
+    SA: 179,
+    WA: 169,
+    TAS: 191,
+    ACT: 161,
+    NT: 143,
+  };
+  return fees[state];
+}
+
 // --- Main calculation orchestrator ---
 
 interface DutyResult {
@@ -125,23 +155,30 @@ interface DutyResult {
   concession: number;
   foreignSurcharge: number;
   totalDuty: number;
+  transferFee: number;
+  mortgageRegFee: number;
 }
 
-function getBaseDuty(state: StateCode, value: number, type: PropertyType): number {
+function getBaseDuty(state: StateCode, value: number, buyerType: BuyerType): number {
+  const isInvestor = buyerType === "investor";
   switch (state) {
     case "NSW": return calcNSW(value);
-    case "VIC": return type === "primary" ? calcVICPrimary(value) : calcVICGeneral(value);
-    case "QLD": return type === "primary" ? calcQLDPrimary(value) : calcQLDGeneral(value);
+    case "VIC": return isInvestor ? calcVICGeneral(value) : calcVICPrimary(value);
+    case "QLD": return isInvestor ? calcQLDGeneral(value) : calcQLDPrimary(value);
     case "SA": return calcSA(value);
     case "WA": return calcWA(value);
     case "TAS": return calcTAS(value);
     case "NT": return calcNT(value);
-    case "ACT": return type === "investment" || type === "vacant"
-      ? calcACTInvestor(value) : calcACTOwner(value);
+    case "ACT": return isInvestor ? calcACTInvestor(value) : calcACTOwner(value);
   }
 }
 
-function getFHBConcession(state: StateCode, value: number, baseDuty: number): number {
+function getFHBConcession(
+  state: StateCode,
+  value: number,
+  propertyType: PropertyType,
+  baseDuty: number,
+): number {
   switch (state) {
     case "NSW":
       if (value <= 800000) return baseDuty;
@@ -152,10 +189,15 @@ function getFHBConcession(state: StateCode, value: number, baseDuty: number): nu
       if (value <= 750000) return baseDuty * (1 - (value - 600000) / 150000);
       return 0;
     case "QLD":
+      // New homes and vacant land: unlimited exemption (from 1 May 2025)
+      if (propertyType === "new" || propertyType === "vacant") return baseDuty;
+      // Established homes: exempt up to $700K only
       if (value <= 700000) return baseDuty;
       return 0;
     case "SA":
-      return baseDuty; // Full exemption for new homes (no cap)
+      // SA FHB exemption applies to new homes only
+      if (propertyType === "new") return baseDuty;
+      return 0;
     case "WA":
       if (value <= 500000) return baseDuty;
       if (value <= 700000) return baseDuty * (1 - (value - 500000) / 200000);
@@ -174,19 +216,28 @@ function getFHBConcession(state: StateCode, value: number, baseDuty: number): nu
 function calculateStampDuty(
   state: StateCode,
   value: number,
-  type: PropertyType,
-  firstHomeBuyer: boolean,
+  buyerType: BuyerType,
+  propertyType: PropertyType,
   foreignBuyer: boolean,
 ): DutyResult {
-  const baseDuty = Math.round(getBaseDuty(state, value, type));
+  const baseDuty = Math.round(getBaseDuty(state, value, buyerType));
   const foreignSurcharge = foreignBuyer ? Math.round(value * FOREIGN_SURCHARGE[state]) : 0;
+  const transferFee = getTransferFee(state, value);
+  const mortgageRegFee = getMortgageRegFee(state);
 
-  if (!firstHomeBuyer || type === "investment") {
-    return { baseDuty, concession: 0, foreignSurcharge, totalDuty: baseDuty + foreignSurcharge };
+  if (buyerType !== "first-home-buyer") {
+    return { baseDuty, concession: 0, foreignSurcharge, totalDuty: baseDuty + foreignSurcharge, transferFee, mortgageRegFee };
   }
 
-  const concession = Math.round(getFHBConcession(state, value, baseDuty));
-  return { baseDuty, concession, foreignSurcharge, totalDuty: Math.max(0, baseDuty - concession) + foreignSurcharge };
+  const concession = Math.round(getFHBConcession(state, value, propertyType, baseDuty));
+  return {
+    baseDuty,
+    concession,
+    foreignSurcharge,
+    totalDuty: Math.max(0, baseDuty - concession) + foreignSurcharge,
+    transferFee,
+    mortgageRegFee,
+  };
 }
 
 // --- Formatting ---
@@ -227,182 +278,265 @@ const FOREIGN_NOTES: Record<StateCode, string> = {
 // --- FHB notes per state ---
 
 const FHB_NOTES: Record<StateCode, string> = {
-  NSW: "Exempt up to $800K, reduced to $1M (new & existing homes)",
-  VIC: "Exempt up to $600K, reduced to $750K",
-  QLD: "Exempt up to $700K (home concession)",
-  SA: "Full exemption for new homes only (no cap)",
-  WA: "Exempt up to $500K, reduced to $700K",
+  NSW: "Exempt up to $800K, reduced duty to $1M (new & existing homes)",
+  VIC: "Exempt up to $600K, reduced duty to $750K",
+  QLD: "Exempt up to $700K for established; unlimited exemption for new homes & vacant land (from May 2025)",
+  SA: "Full exemption for new homes only (no price cap)",
+  WA: "Exempt up to $500K, reduced duty to $700K",
   TAS: "Exempt up to $750K (until June 2026)",
-  ACT: "Exempt up to $1.02M, partial concession above (income test applies)",
-  NT: "No stamp duty concession — $50K HomeGrown grant available instead",
+  ACT: "Exempt up to $1.02M, partial concession above (income test applies — household income under $160K)",
+  NT: "No stamp duty concession — up to $18,601 grant available instead",
 };
 
 // --- Component ---
 
-export default function StampDutyCalculator({ initialState = "NSW", defaultPropertyValue = 500000 }: { initialState?: StateCode; defaultPropertyValue?: number } = {}) {
+export default function StampDutyCalculator({
+  initialState = "NSW",
+  defaultPropertyValue = 600000,
+}: {
+  initialState?: StateCode;
+  defaultPropertyValue?: number;
+} = {}) {
   const [state, setState] = useState<StateCode>(initialState);
   const [propertyValue, setPropertyValue] = useState(defaultPropertyValue);
-  const [propertyType, setPropertyType] = useState<PropertyType>("primary");
-  const [firstHomeBuyer, setFirstHomeBuyer] = useState(false);
+  const [buyerType, setBuyerType] = useState<BuyerType>("owner-occupier");
+  const [propertyType, setPropertyType] = useState<PropertyType>("established");
   const [foreignBuyer, setForeignBuyer] = useState(false);
 
   const result = useMemo(
-    () => calculateStampDuty(state, propertyValue, propertyType, firstHomeBuyer, foreignBuyer),
-    [state, propertyValue, propertyType, firstHomeBuyer, foreignBuyer],
+    () => calculateStampDuty(state, propertyValue, buyerType, propertyType, foreignBuyer),
+    [state, propertyValue, buyerType, propertyType, foreignBuyer],
   );
 
   const comparison = useMemo(() => {
     return ALL_STATES.map((s) => ({
       code: s,
       name: STATE_NAMES[s],
-      ...calculateStampDuty(s, propertyValue, propertyType, firstHomeBuyer, foreignBuyer),
+      ...calculateStampDuty(s, propertyValue, buyerType, propertyType, foreignBuyer),
     })).sort((a, b) => a.totalDuty - b.totalDuty);
-  }, [propertyValue, propertyType, firstHomeBuyer, foreignBuyer]);
+  }, [propertyValue, buyerType, propertyType, foreignBuyer]);
 
   const effectiveRate = propertyValue > 0
     ? ((result.totalDuty / propertyValue) * 100).toFixed(2)
     : "0.00";
 
+  const settlementTotal = propertyValue + result.totalDuty + result.transferFee + result.mortgageRegFee;
+
+  const isFHB = buyerType === "first-home-buyer";
+  const showSANewHomeNote = isFHB && propertyType === "established" && state === "SA";
+  const showNoConcessionNote = isFHB && result.concession === 0 && state !== "NT";
+
   return (
     <div className="space-y-8">
       {/* Input Panel */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-5">
           Calculate Your Stamp Duty
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* State selector */}
+        <div className="space-y-5">
+          {/* Property value — slider + input */}
           <div>
-            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-              State / Territory
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Property Purchase Price
             </label>
-            <select
-              id="state"
-              value={state}
-              onChange={(e) => setState(e.target.value as StateCode)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {ALL_STATES.map((s) => (
-                <option key={s} value={s}>{s} — {STATE_NAMES[s]}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Property value */}
-          <div>
-            <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
-              Property Value
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-              <input
-                id="value"
-                type="number"
-                min={0}
-                step={10000}
-                value={propertyValue}
-                onChange={(e) => setPropertyValue(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative w-44">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                <input
+                  type="number"
+                  min={50000}
+                  max={5000000}
+                  step={10000}
+                  value={propertyValue}
+                  onChange={(e) => setPropertyValue(Math.max(50000, Math.min(5000000, Number(e.target.value))))}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+              <span className="text-base font-semibold text-blue-700">{formatCurrency(propertyValue)}</span>
+            </div>
+            <input
+              type="range"
+              min={100000}
+              max={3000000}
+              step={10000}
+              value={Math.min(propertyValue, 3000000)}
+              onChange={(e) => setPropertyValue(Number(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>$100K</span><span>$1M</span><span>$2M</span><span>$3M</span>
             </div>
           </div>
 
-          {/* Property type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Property Type
-            </label>
-            <div className="flex gap-2">
-              {([
-                ["primary", "Primary Residence"],
-                ["investment", "Investment"],
-                ["vacant", "Vacant Land"],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  onClick={() => setPropertyType(value)}
-                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
-                    propertyType === value
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* State selector */}
+            <div>
+              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                State / Territory
+              </label>
+              <select
+                id="state"
+                value={state}
+                onChange={(e) => setState(e.target.value as StateCode)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {ALL_STATES.map((s) => (
+                  <option key={s} value={s}>{s} — {STATE_NAMES[s]}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Buyer type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Buyer Type
+              </label>
+              <div className="flex gap-2">
+                {([
+                  ["first-home-buyer", "First Home Buyer"],
+                  ["owner-occupier", "Owner-Occupier"],
+                  ["investor", "Investor"],
+                ] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setBuyerType(val)}
+                    className={`flex-1 px-2 py-2 text-xs rounded-lg border transition-colors ${
+                      buyerType === val
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Property type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Property Type
+              </label>
+              <div className="flex gap-2">
+                {([
+                  ["established", "Established"],
+                  ["new", "New Home"],
+                  ["vacant", "Vacant Land"],
+                ] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setPropertyType(val)}
+                    className={`flex-1 px-2 py-2 text-xs rounded-lg border transition-colors ${
+                      propertyType === val
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Foreign buyer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Foreign Buyer Surcharge
+              </label>
+              <button
+                onClick={() => setForeignBuyer(!foreignBuyer)}
+                className={`w-full px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  foreignBuyer
+                    ? "bg-red-600 text-white border-red-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {foreignBuyer ? "Yes — Surcharge Applied" : "No"}
+              </button>
+              {foreignBuyer && (
+                <p className="text-xs text-gray-500 mt-1">{FOREIGN_NOTES[state]}</p>
+              )}
             </div>
           </div>
 
-          {/* First home buyer toggle */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              First Home Buyer
-            </label>
-            <button
-              onClick={() => setFirstHomeBuyer(!firstHomeBuyer)}
-              disabled={propertyType === "investment"}
-              className={`w-full px-3 py-2 text-sm rounded-lg border transition-colors ${
-                firstHomeBuyer && propertyType !== "investment"
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              } ${propertyType === "investment" ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {firstHomeBuyer && propertyType !== "investment" ? "Yes — Concession Applied" : "No"}
-            </button>
-            {firstHomeBuyer && propertyType !== "investment" && (
-              <p className="text-xs text-gray-500 mt-1">{FHB_NOTES[state]}</p>
-            )}
-          </div>
-
-          {/* Foreign buyer surcharge toggle */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Foreign Buyer
-            </label>
-            <button
-              onClick={() => setForeignBuyer(!foreignBuyer)}
-              className={`w-full px-3 py-2 text-sm rounded-lg border transition-colors ${
-                foreignBuyer
-                  ? "bg-red-600 text-white border-red-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              {foreignBuyer ? "Yes — Surcharge Applied" : "No"}
-            </button>
-            {foreignBuyer && (
-              <p className="text-xs text-gray-500 mt-1">{FOREIGN_NOTES[state]}</p>
-            )}
-          </div>
+          {/* FHB info note */}
+          {isFHB && (
+            <div className={`rounded-lg px-4 py-3 text-sm ${showNoConcessionNote ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-green-50 border border-green-200 text-green-800"}`}>
+              {showSANewHomeNote
+                ? "SA first home buyer exemption applies to new homes only. Select \u2018New Home\u2019 above to apply the exemption."
+                : showNoConcessionNote
+                ? `No FHB concession applies in ${STATE_NAMES[state]} for this property price or type.`
+                : `FHB concession applied \u2014 ${FHB_NOTES[state]}`}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Results */}
+      {/* Hero result */}
+      <div className="bg-blue-700 rounded-xl p-6 text-white text-center">
+        <p className="text-blue-200 text-sm mb-1">Stamp duty payable in {STATE_NAMES[state]}</p>
+        <p className="text-4xl font-bold mb-1">{formatCurrency(result.totalDuty)}</p>
+        <p className="text-blue-200 text-sm">{effectiveRate}% effective rate on {formatCurrency(propertyValue)}</p>
+      </div>
+
+      {/* 4-card grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
-          <p className="text-sm text-gray-500 mb-1">Base Duty</p>
-          <p className="text-xl font-bold text-gray-900">{formatCurrency(result.baseDuty)}</p>
+        <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
+          <p className="text-xs text-gray-500 mb-1">Base Duty</p>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(result.baseDuty)}</p>
         </div>
-        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
-          <p className="text-sm text-gray-500 mb-1">Concessions</p>
-          <p className={`text-xl font-bold ${result.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
-            {result.concession > 0 ? `−${formatCurrency(result.concession)}` : "$0"}
+        <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
+          <p className="text-xs text-gray-500 mb-1">Concession</p>
+          <p className={`text-lg font-bold ${result.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
+            {result.concession > 0 ? `\u2212${formatCurrency(result.concession)}` : "$0"}
           </p>
         </div>
-        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
-          <p className="text-sm text-gray-500 mb-1">Foreign Surcharge</p>
-          <p className={`text-xl font-bold ${result.foreignSurcharge > 0 ? "text-red-600" : "text-gray-400"}`}>
+        <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
+          <p className="text-xs text-gray-500 mb-1">Foreign Surcharge</p>
+          <p className={`text-lg font-bold ${result.foreignSurcharge > 0 ? "text-red-600" : "text-gray-400"}`}>
             {result.foreignSurcharge > 0 ? formatCurrency(result.foreignSurcharge) : "$0"}
           </p>
         </div>
-        <div className="border border-blue-200 rounded-xl p-5 bg-blue-50 text-center">
-          <p className="text-sm text-blue-700 mb-1">Total Stamp Duty</p>
-          <p className="text-xl font-bold text-blue-900">{formatCurrency(result.totalDuty)}</p>
-          <p className="text-xs text-blue-600 mt-1">{effectiveRate}% effective rate</p>
+        <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
+          <p className="text-xs text-gray-500 mb-1">Transfer Fee</p>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(result.transferFee)}</p>
         </div>
       </div>
 
-      {/* Breakdown */}
+      {/* Settlement total callout */}
+      <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+        <p className="text-sm font-semibold text-green-800 mb-3">
+          Your total to have ready on settlement day
+        </p>
+        <div className="text-sm text-green-700 space-y-1 mb-4">
+          <div className="flex justify-between">
+            <span>Property purchase price</span>
+            <span className="font-medium">{formatCurrency(propertyValue)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Stamp duty</span>
+            <span className="font-medium">{formatCurrency(result.totalDuty)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Land transfer registration fee</span>
+            <span className="font-medium">{formatCurrency(result.transferFee)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Mortgage registration fee</span>
+            <span className="font-medium">{formatCurrency(result.mortgageRegFee)}</span>
+          </div>
+        </div>
+        <div className="border-t border-green-300 pt-3 flex justify-between items-center">
+          <span className="font-bold text-green-900 text-base">Total upfront costs</span>
+          <span className="font-bold text-green-900 text-2xl">{formatCurrency(settlementTotal)}</span>
+        </div>
+        <p className="text-xs text-green-600 mt-2">
+          Excludes legal/conveyancing fees, building &amp; pest inspections, lender fees, and moving costs.
+        </p>
+      </div>
+
+      {/* Duty Breakdown */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
         <h3 className="font-semibold text-gray-900 mb-3">Duty Breakdown — {STATE_NAMES[state]}</h3>
         <div className="space-y-2 text-sm">
@@ -411,8 +545,16 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
             <span className="font-medium">{formatCurrency(propertyValue)}</span>
           </div>
           <div className="flex justify-between">
+            <span className="text-gray-600">Buyer type</span>
+            <span className="font-medium">
+              {buyerType === "first-home-buyer" ? "First home buyer" : buyerType === "owner-occupier" ? "Owner-occupier" : "Investor"}
+            </span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-gray-600">Property type</span>
-            <span className="font-medium capitalize">{propertyType === "primary" ? "Primary residence" : propertyType === "investment" ? "Investment" : "Vacant land"}</span>
+            <span className="font-medium">
+              {propertyType === "established" ? "Established home" : propertyType === "new" ? "New home" : "Vacant land"}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Standard duty ({STATE_NAMES[state]})</span>
@@ -421,7 +563,7 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
           {result.concession > 0 && (
             <div className="flex justify-between text-green-700">
               <span>First home buyer concession</span>
-              <span className="font-medium">−{formatCurrency(result.concession)}</span>
+              <span className="font-medium">&minus;{formatCurrency(result.concession)}</span>
             </div>
           )}
           {result.foreignSurcharge > 0 && (
@@ -434,28 +576,14 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
             <span>Total stamp duty payable</span>
             <span className="text-blue-800">{formatCurrency(result.totalDuty)}</span>
           </div>
-        </div>
-      </div>
-
-      {/* Total Purchase Cost Breakdown */}
-      <div className="border border-gray-200 rounded-xl p-6 bg-white">
-        <h3 className="font-semibold text-gray-900 mb-3">Total Purchase Cost</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Property price</span>
-            <span className="font-medium">{formatCurrency(propertyValue)}</span>
+          <div className="flex justify-between text-gray-500 text-xs pt-1">
+            <span>Land transfer registration fee</span>
+            <span>{formatCurrency(result.transferFee)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Stamp duty</span>
-            <span className="font-medium">{formatCurrency(result.totalDuty)}</span>
+          <div className="flex justify-between text-gray-500 text-xs">
+            <span>Mortgage registration fee</span>
+            <span>{formatCurrency(result.mortgageRegFee)}</span>
           </div>
-          <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold text-base">
-            <span>Estimated total cost</span>
-            <span className="text-blue-800">{formatCurrency(propertyValue + result.totalDuty)}</span>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Excludes legal fees, building inspections, loan fees, and other settlement costs.
-          </p>
         </div>
       </div>
 
@@ -465,8 +593,9 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
           Compare Stamp Duty Across All States
         </h3>
         <p className="text-sm text-gray-500 mb-4">
-          For a {formatCurrency(propertyValue)} {propertyType === "primary" ? "primary residence" : propertyType === "investment" ? "investment property" : "vacant land block"}
-          {firstHomeBuyer && propertyType !== "investment" ? " (first home buyer)" : ""}
+          For a {formatCurrency(propertyValue)}{" "}
+          {propertyType === "established" ? "established home" : propertyType === "new" ? "new home" : "vacant land block"}
+          {buyerType === "first-home-buyer" ? " (first home buyer)" : buyerType === "investor" ? " (investor)" : ""}
         </p>
 
         <div className="overflow-x-auto">
@@ -475,7 +604,7 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
               <tr className="border-b border-gray-200">
                 <th className="text-left py-2 pr-4 font-medium text-gray-700">State</th>
                 <th className="text-right py-2 px-4 font-medium text-gray-700">Base Duty</th>
-                {firstHomeBuyer && propertyType !== "investment" && (
+                {buyerType === "first-home-buyer" && (
                   <th className="text-right py-2 px-4 font-medium text-gray-700">Concession</th>
                 )}
                 {foreignBuyer && (
@@ -502,14 +631,14 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
                   <td className="text-right py-2 px-4 text-gray-600">
                     {formatCurrency(row.baseDuty)}
                   </td>
-                  {firstHomeBuyer && propertyType !== "investment" && (
+                  {buyerType === "first-home-buyer" && (
                     <td className={`text-right py-2 px-4 ${row.concession > 0 ? "text-green-600" : "text-gray-400"}`}>
-                      {row.concession > 0 ? `−${formatCurrency(row.concession)}` : "—"}
+                      {row.concession > 0 ? `\u2212${formatCurrency(row.concession)}` : "\u2014"}
                     </td>
                   )}
                   {foreignBuyer && (
                     <td className={`text-right py-2 px-4 ${row.foreignSurcharge > 0 ? "text-red-600" : "text-gray-400"}`}>
-                      {row.foreignSurcharge > 0 ? formatCurrency(row.foreignSurcharge) : "—"}
+                      {row.foreignSurcharge > 0 ? formatCurrency(row.foreignSurcharge) : "\u2014"}
                     </td>
                   )}
                   <td className="text-right py-2 px-4 font-semibold text-gray-900">
@@ -537,24 +666,24 @@ export default function StampDutyCalculator({ initialState = "NSW", defaultPrope
             <span className="text-gray-400 ml-auto">→</span>
           </Link>
           <Link
-            href="/calculators/car-loan"
+            href="/calculators/first-home-buyer"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
-            <span className="text-blue-600 font-medium">Car Loan Calculator</span>
+            <span className="text-blue-600 font-medium">First Home Buyer Calculator</span>
             <span className="text-gray-400 ml-auto">→</span>
           </Link>
           <Link
-            href="/calculators/super"
+            href="/calculators/land-tax"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
-            <span className="text-blue-600 font-medium">Superannuation Calculator</span>
+            <span className="text-blue-600 font-medium">Land Tax Calculator</span>
             <span className="text-gray-400 ml-auto">→</span>
           </Link>
           <Link
-            href="/calculators/hecs-help"
+            href="/calculators/rental-yield"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
-            <span className="text-blue-600 font-medium">HECS-HELP Calculator</span>
+            <span className="text-blue-600 font-medium">Rental Yield Calculator</span>
             <span className="text-gray-400 ml-auto">→</span>
           </Link>
         </div>

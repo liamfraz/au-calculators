@@ -86,12 +86,12 @@ const calculators: Calculator[] = [
     tags: ["Car Finance", "Vehicle Loan", "Balloon Payment"],
   },
   {
-    title: "Stamp Duty Calculator",
+    title: "Stamp Duty Calculator 2026 — All States",
     description:
-      "Calculate stamp duty (transfer duty) for all Australian states and territories. Compare rates, apply first home buyer concessions, and see 2025–2026 rates.",
-    href: "/stamp-duty-calculator",
+      "Calculate stamp duty for all Australian states and territories. Covers first home buyer concessions, foreign buyer surcharges, transfer fees, and your full settlement day total.",
+    href: "/calculators/stamp-duty",
     icon: "📋",
-    tags: ["Property", "Transfer Duty", "All States"],
+    tags: ["Property", "Transfer Duty", "All States", "First Home Buyer"],
   },
   {
     title: "First Home Buyer Stamp Duty Concession Calculator",
