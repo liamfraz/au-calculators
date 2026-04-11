@@ -249,7 +249,7 @@ export default function SMSFBalanceProjectionPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-red-600 font-bold">✗</span>
-                  <span>Don't have $250K+ in investable super yet</span>
+                  <span>Don&apos;t have $250K+ in investable super yet</span>
                 </li>
               </ul>
             </div>
