@@ -80,6 +80,8 @@ interface Results {
   discountPct: number;
   discountAmount: number;
   taxableGain: number;
+  otherGains: number;
+  totalTaxableGain: number;
   marginalRate: number;
   estimatedTax: number;
   netGainAfterTax: number;
@@ -100,6 +102,7 @@ export default function CapitalGainsTaxCalculator() {
   const [saleDate, setSaleDate] = useState("");
   const [capitalImprovements, setCapitalImprovements] = useState("");
   const [sellingCosts, setSellingCosts] = useState("");
+  const [otherNetGains, setOtherNetGains] = useState("");
   const [entityType, setEntityType] = useState<EntityType>("individual");
   const [taxInputMode, setTaxInputMode] = useState<TaxInputMode>("rate");
   const [taxableIncome, setTaxableIncome] = useState("");
@@ -110,38 +113,41 @@ export default function CapitalGainsTaxCalculator() {
     const purchase = parseFloat(purchasePrice) || 0;
     const sale = parseFloat(salePrice) || 0;
     const costs = (parseFloat(capitalImprovements) || 0) + (parseFloat(sellingCosts) || 0);
+    const otherGains = parseFloat(otherNetGains) || 0;
 
     if (!purchase || !sale || !purchaseDate || !saleDate) return;
 
     const capitalGain = sale - purchase - costs;
     const heldMonths = monthsBetween(purchaseDate, saleDate);
-    const discountEligible = heldMonths >= 12 && entityType !== "company";
+    const discountEligible = heldMonths >= 12 && entityType !== "company" && capitalGain > 0;
     const discountPct = discountEligible ? ENTITY_INFO[entityType].discountPct : 0;
+    const discountAmount = capitalGain > 0 ? capitalGain * (discountPct / 100) : 0;
+    const taxableGain = capitalGain > 0 ? capitalGain - discountAmount : capitalGain;
+    const totalTaxableGain = taxableGain + otherGains;
 
-    if (capitalGain <= 0) {
+    if (totalTaxableGain <= 0) {
       setResults({
         capitalGain,
         heldMonths,
-        discountEligible: false,
-        discountPct: 0,
-        discountAmount: 0,
-        taxableGain: 0,
+        discountEligible,
+        discountPct,
+        discountAmount,
+        taxableGain,
+        otherGains,
+        totalTaxableGain,
         marginalRate: 0,
         estimatedTax: 0,
         netGainAfterTax: capitalGain,
         effectiveCgtRate: 0,
         entityType,
         assetType,
-        isLoss: capitalGain < 0,
+        isLoss: totalTaxableGain < 0,
         taxInputMode,
         taxWithoutGain: 0,
         taxWithGain: 0,
       });
       return;
     }
-
-    const discountAmount = capitalGain * (discountPct / 100);
-    const taxableGain = capitalGain - discountAmount;
 
     let estimatedTax: number;
     let marginalRate: number;
@@ -150,19 +156,19 @@ export default function CapitalGainsTaxCalculator() {
 
     if (entityType === "company") {
       marginalRate = 0.25;
-      estimatedTax = taxableGain * 0.25;
+      estimatedTax = totalTaxableGain * 0.25;
     } else if (entityType === "smsf") {
       marginalRate = 0.15;
-      estimatedTax = taxableGain * 0.15;
+      estimatedTax = totalTaxableGain * 0.15;
     } else if (taxInputMode === "rate") {
       marginalRate = parseFloat(selectedRate);
-      estimatedTax = taxableGain * marginalRate;
+      estimatedTax = totalTaxableGain * marginalRate;
     } else {
       const income = parseFloat(taxableIncome) || 0;
       taxWithoutGain = calculateTaxOnAmount(income);
-      taxWithGain = calculateTaxOnAmount(income + taxableGain);
+      taxWithGain = calculateTaxOnAmount(income + totalTaxableGain);
       estimatedTax = taxWithGain - taxWithoutGain;
-      marginalRate = calculateMarginalRate(income + taxableGain);
+      marginalRate = calculateMarginalRate(income + totalTaxableGain);
     }
 
     const effectiveCgtRate = capitalGain > 0 ? (estimatedTax / capitalGain) * 100 : 0;
@@ -175,6 +181,8 @@ export default function CapitalGainsTaxCalculator() {
       discountPct,
       discountAmount,
       taxableGain,
+      otherGains,
+      totalTaxableGain,
       marginalRate,
       estimatedTax,
       netGainAfterTax,
@@ -321,6 +329,23 @@ export default function CapitalGainsTaxCalculator() {
           </p>
         </div>
 
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Other net capital gains / losses this FY ($)
+            <span className="text-gray-400 font-normal ml-1">optional — use negative for losses</span>
+          </label>
+          <input
+            type="number"
+            value={otherNetGains}
+            onChange={(e) => setOtherNetGains(e.target.value)}
+            placeholder="e.g. -5000 for a $5,000 loss, or 10000 for a $10,000 gain"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Enter other CGT gains or losses from this financial year (already net of the CGT discount where applicable) to offset against this asset&apos;s gain.
+          </p>
+        </div>
+
         {entityType !== "company" && entityType !== "smsf" && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -450,9 +475,11 @@ export default function CapitalGainsTaxCalculator() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-600 uppercase tracking-wide">Net Taxable Gain</p>
+                  <p className="text-xs text-blue-600 uppercase tracking-wide">
+                    {results.otherGains !== 0 ? "Total Net Taxable Gain" : "Net Taxable Gain"}
+                  </p>
                   <p className="text-xl font-bold text-blue-900">
-                    {formatCurrency(results.taxableGain)}
+                    {formatCurrency(results.otherGains !== 0 ? results.totalTaxableGain : results.taxableGain)}
                   </p>
                 </div>
                 <div>
@@ -540,9 +567,27 @@ export default function CapitalGainsTaxCalculator() {
                     </tr>
                   )}
                   <tr className="font-semibold">
-                    <td className="py-2 text-gray-900">Net Taxable Capital Gain</td>
+                    <td className="py-2 text-gray-900">Taxable Gain (this asset)</td>
                     <td className="py-2 text-right">{formatCurrency(results.taxableGain)}</td>
                   </tr>
+                  {results.otherGains !== 0 && (
+                    <tr>
+                      <td className="py-2 text-gray-600">
+                        {results.otherGains < 0 ? "Less: Other capital losses this FY" : "Plus: Other capital gains this FY"}
+                      </td>
+                      <td className={`py-2 text-right font-medium ${results.otherGains < 0 ? "text-green-700" : ""}`}>
+                        {results.otherGains < 0
+                          ? `\u2212${formatCurrency(Math.abs(results.otherGains))}`
+                          : `+${formatCurrency(results.otherGains)}`}
+                      </td>
+                    </tr>
+                  )}
+                  {results.otherGains !== 0 && (
+                    <tr className="font-semibold">
+                      <td className="py-2 text-gray-900">Total Net Taxable Capital Gain</td>
+                      <td className="py-2 text-right">{formatCurrency(results.totalTaxableGain)}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td className="py-2 text-gray-600">
                       {results.entityType === "company"
@@ -596,8 +641,29 @@ export default function CapitalGainsTaxCalculator() {
           <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-4 flex gap-3">
             <span className="text-yellow-600 text-lg shrink-0">⚠</span>
             <p className="text-sm text-yellow-800">
-              <strong>This is an estimate</strong> — speak to a tax accountant for your specific situation. CGT calculations can be affected by losses carried forward, the main residence exemption, small business concessions, and other factors not captured here.
+              <strong>This is an estimate only. Consult a registered tax agent for advice.</strong> CGT calculations can be affected by losses carried forward, the main residence exemption, small business concessions, and other factors not captured here.
             </p>
+          </div>
+
+          {/* Affiliate CTA */}
+          <div className="bg-blue-700 rounded-xl p-6 text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Need help lodging your tax return?</h3>
+                <p className="text-blue-100 text-sm">
+                  H&amp;R Block&apos;s registered tax agents can help you maximise CGT deductions,
+                  apply the correct discount, and lodge your return correctly.
+                </p>
+              </div>
+              <a
+                href="https://www.hrblock.com.au/tax-services"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="shrink-0 inline-block bg-white text-blue-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-50 transition-colors text-sm text-center"
+              >
+                Book a tax agent →
+              </a>
+            </div>
           </div>
 
           {/* 50% CGT Discount explanation */}

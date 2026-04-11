@@ -3,24 +3,26 @@ import CapitalGainsTaxCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
-  title: "Capital Gains Tax Calculator Australia 2026 — Shares & Crypto",
+  title: "Capital Gains Tax Calculator Australia 2026 — Crypto, Shares & Property",
   description:
-    "Free Australian capital gains tax calculator. Calculate CGT on property, shares, and crypto with the 50% discount for assets held over 12 months. Uses 2025-26 ATO tax brackets.",
+    "Free CGT calculator Australia. Calculate capital gains tax on crypto, shares, and property with the 50% discount for assets held over 12 months. Instant estimates using 2025-26 ATO tax brackets.",
   keywords: [
+    "cgt calculator australia",
     "capital gains tax calculator australia",
+    "crypto tax calculator australia",
     "cgt calculator au",
     "property capital gains tax calculator",
     "capital gains tax calculator",
     "cgt discount calculator",
     "capital gains tax on shares australia",
-    "capital gains tax on property australia",
+    "capital gains tax on crypto australia",
     "cgt calculator 2026",
     "50 percent cgt discount",
   ],
   openGraph: {
-    title: "Capital Gains Tax Calculator Australia 2026 — CGT with 50% Discount",
+    title: "Capital Gains Tax Calculator Australia 2026 — Crypto, Shares & Property",
     description:
-      "Calculate capital gains tax on property, shares, and crypto. Auto-detects 50% CGT discount eligibility. Uses 2025-26 ATO tax brackets.",
+      "Free CGT calculator Australia. Calculate capital gains tax on crypto, shares, and property. Auto-detects 50% discount eligibility. Uses 2025-26 ATO tax brackets.",
     type: "website",
   },
 };
