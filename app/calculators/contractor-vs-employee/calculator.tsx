@@ -10,20 +10,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 // ─── ATO 2025-26 Tax Brackets (Resident) ──────────────────────────
-
-type Bracket = { min: number; max: number; rate: number };
-
-const RESIDENT_BRACKETS: Bracket[] = [
-  { min: 0, max: 18200, rate: 0 },
-  { min: 18201, max: 45000, rate: 0.16 },
-  { min: 45001, max: 135000, rate: 0.30 },
-  { min: 135001, max: 190000, rate: 0.37 },
-  { min: 190001, max: Infinity, rate: 0.45 },
-];
 
 // ─── Calculation Functions ───────────────────────────────────────
 
@@ -229,7 +218,6 @@ export default function ContractorVsEmployeeCalculator() {
   const activeBtn = "bg-blue-600 text-white border-blue-600";
   const inactiveBtn = "bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
 
-  const employeeAdvantageAmount = Math.abs(scenario.contractorAdvantage);
   const isContractorBetter = scenario.contractorAdvantage > 0;
 
   return (
