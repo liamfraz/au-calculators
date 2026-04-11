@@ -15,7 +15,7 @@
 import { chromium } from 'playwright';
 import path from 'path';
 import os from 'os';
-import fs from 'fs';
+
 
 const WAIT_FOR_LOGIN = process.argv.includes('--wait-for-login');
 const CHROME_USER_DATA = path.join(os.homedir(), 'Library/Application Support/Google/Chrome');
@@ -243,7 +243,7 @@ async function main() {
       channel: 'chrome',
     });
     console.log('✅ Using existing Chrome profile (session preserved)');
-  } catch (err) {
+  } catch {
     console.log('⚠️  Chrome profile locked (Chrome is running). Using fresh browser instead.');
     browser = await chromium.launch({ headless: false, slowMo: 200 });
     context = await browser.newContext();
@@ -275,15 +275,6 @@ async function main() {
 
   await context.close();
   if (browser) await browser.close();
-
-  // Save results
-  const logPath = path.join(process.cwd(), 'marketing/launch-log.md');
-  const now = new Date().toISOString().split('T')[0];
-  const logEntry = results.map(r =>
-    r.success
-      ? `| r/${r.subreddit} | ${now} | [Post](${r.url}) |`
-      : `| r/${r.subreddit} | ${now} | FAILED: ${r.error} |`
-  ).join('\n');
 
   console.log('\n📊 Results:');
   results.forEach(r => {
