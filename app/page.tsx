@@ -62,6 +62,14 @@ const calculators: Calculator[] = [
     tags: ["Income Tax", "ATO 2025-26", "Take-Home Pay"],
   },
   {
+    title: "Contractor vs Employee Calculator 2025-26",
+    description:
+      "Compare take-home pay as a contractor vs employee. See PAYG tax, super, leave entitlements, and which arrangement pays more.",
+    href: "/calculators/contractor-vs-employee",
+    icon: "⚖️",
+    tags: ["Contractor", "Employee", "Tax Comparison"],
+  },
+  {
     title: "Mortgage Repayment Calculator",
     description:
       "Calculate your home loan repayments, total interest, and view an amortization schedule. Compare different rates and terms side by side.",
