@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title:
-    "HECS-HELP Repayment Calculator 2026 — See When You'll Be Debt Free | AU Calculators",
+    "HECS-HELP Repayment Calculator 2026 — See When You'll Be Debt Free",
   description:
     "Free HECS-HELP repayment calculator Australia 2026. Enter your debt balance and income to see exactly when you'll be debt free, using ATO's official 2025-26 repayment thresholds.",
   keywords: [
