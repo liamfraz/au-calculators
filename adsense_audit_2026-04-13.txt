@@ -1,0 +1,104 @@
+ADSENSE_STATUS: pending | TODAY: $0 | THIS_MONTH: $0 | RPM: $0 | TOP_PAGES: [none — ads not rendering on live site]
+
+================================================================================
+AUDIT DATE: 2026-04-13
+================================================================================
+
+ROOT CAUSE — CRITICAL BLOCKER
+================================================================================
+NEXT_PUBLIC_ADSENSE_ID is NOT set in Vercel production environment.
+
+Evidence:
+- `vercel env pull --environment=production` returned zero NEXT_PUBLIC_* variables
+- .env.local does not exist locally
+- .env.example shows: NEXT_PUBLIC_ADSENSE_ID= (empty)
+
+Effect:
+- AdUnit component renders placeholder text ("Ad Space — Configure NEXT_PUBLIC_ADSENSE_ID")
+  instead of real ads on ALL calculator pages in production
+- layout.tsx omits the <meta name="google-adsense-account"> tag
+- The adsbygoogle.js script is NOT injected into any page
+- Google cannot verify the site or serve ads
+- $0 earnings, $0 RPM — not a traffic problem, a configuration problem
+
+================================================================================
+WHAT IS CONNECTED CORRECTLY (code is ready)
+================================================================================
+- AdUnit component: app/components/AdUnit.tsx — correct implementation
+  - Reads NEXT_PUBLIC_ADSENSE_ID from env
+  - Injects <ins class="adsbygoogle"> with data-ad-client and data-ad-slot
+  - Falls back gracefully when env var is absent
+- AdUnit is deployed to 62 pages (250 ad slots total)
+- layout.tsx conditionally injects adsbygoogle.js script and meta tag
+- Privacy policy and terms mention AdSense — legally compliant
+- Cookie consent banner references AdSense
+
+================================================================================
+WHAT NEEDS TO BE FIXED
+================================================================================
+
+STEP 1 — Set the publisher ID in Vercel (UNBLOCKS REVENUE)
+  Command:
+    vercel env add NEXT_PUBLIC_ADSENSE_ID production
+    [enter your ca-pub-XXXXXXXXXXXXXXXX value when prompted]
+  Then redeploy:
+    vercel --prod
+
+STEP 2 — Verify your AdSense publisher ID
+  Log into https://adsense.google.com manually and check:
+  - Account status (active / under review / suspended)
+  - Your publisher ID (format: ca-pub-XXXXXXXXXXXXXXXX)
+  - Whether site verification is pending
+
+STEP 3 — Create ad units in AdSense UI
+  The code uses slot strings like "above-calculator", "below-results", "sidebar"
+  These are human-readable labels only — AdSense requires numeric slot IDs.
+  You need to:
+  a) Create ad units in AdSense > Ads > By ad unit
+  b) Replace the slot string values in each page.tsx with the numeric slot IDs
+     (e.g. "1234567890" instead of "above-calculator")
+
+STEP 4 — Verify GSC connection
+  Google Search Console at https://search.google.com/search-console
+  Domain: au-calculators.vercel.app (or custom domain if configured)
+  Status from memory: UNVERIFIED — verify via DNS or HTML tag method
+
+================================================================================
+AD SLOT AUDIT — PAGES AND SLOT NAMES IN USE
+================================================================================
+All 62 calculator pages use AdUnit. Common slot names found:
+  - "above-calculator"   (horizontal, above the tool)
+  - "below-results"      (horizontal, below output)
+  - "sidebar"            (vertical, right column)
+  - "above-table"        (horizontal, above data tables)
+
+These slot name strings will NOT earn money until replaced with real AdSense
+numeric slot IDs from your AdSense account.
+
+================================================================================
+TRAFFIC CONTEXT (from Google Search Console — manual check needed)
+================================================================================
+Cannot access GSC programmatically (requires Google auth).
+Last known status: GSC unverified, $0 AdSense earnings.
+Manual check needed at: https://search.google.com/search-console
+
+================================================================================
+SUMMARY: WHAT IS ACTUALLY EARNING / BROKEN / NEXT STEPS
+================================================================================
+
+EARNING NOW:     Nothing. $0 across all 62 pages.
+
+BROKEN:
+  1. NEXT_PUBLIC_ADSENSE_ID missing from Vercel → no ads load anywhere
+  2. Ad slots use placeholder string names, not AdSense numeric slot IDs
+  3. GSC unverified → Google may not be indexing pages correctly
+
+PRIORITY TO UNBLOCK REVENUE:
+  1. [IMMEDIATE] Set NEXT_PUBLIC_ADSENSE_ID in Vercel env → redeploy
+  2. [TODAY]     In AdSense, create ad units and get real numeric slot IDs
+  3. [TODAY]     Update slot props in page.tsx files with numeric IDs
+  4. [TODAY]     Verify site in Google Search Console
+
+Once #1 is done, the 250 ad slots across 62 pages will begin serving ads.
+With current traffic levels, expect $0–$5/day initially; RPM will depend on
+niche (AU financial calculators typically $3–$15 RPM).
