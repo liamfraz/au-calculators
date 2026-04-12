@@ -40,7 +40,7 @@ export default function BasCalculator() {
     const totalOwing = netGst + payg;
 
     return { rev, collected, paid, payg, fuel, netGst, totalOwing, expectedGst };
-  }, [gstCollected, gstPaid, paygWithholding, fuelTaxCredits]);
+  }, [revenue, gstCollected, gstPaid, paygWithholding, fuelTaxCredits]);
 
   // Determine current quarter (April 2026 = Q4)
   const getCurrentQuarter = () => {
