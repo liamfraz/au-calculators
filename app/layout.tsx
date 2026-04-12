@@ -92,6 +92,12 @@ export default function RootLayout({
                 Super
               </Link>
               <Link
+                href="/superannuation-calculator"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Super Balance
+              </Link>
+              <Link
                 href="/calculators/smsf-balance-projection"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >

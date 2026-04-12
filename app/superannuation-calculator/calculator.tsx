@@ -13,8 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// --- Formatting ---
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
@@ -24,8 +22,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-// --- Calculation ---
-
 interface YearRow {
   age: number;
   year: number;
@@ -33,6 +29,7 @@ interface YearRow {
   voluntaryContributions: number;
   investmentReturns: number;
   balance: number;
+  realBalance: number;
   contributionsTotal: number;
   investmentGrowth: number;
 }
@@ -40,17 +37,13 @@ interface YearRow {
 interface ProjectionResult {
   rows: YearRow[];
   retirementBalance: number;
-  annualIncomeRetirement: number;
+  realRetirementBalance: number;
+  monthlyIncome: number;
   yearsToRetirement: number;
   totalEmployerContributions: number;
   totalVoluntaryContributions: number;
   totalInvestmentReturns: number;
-  meetsASFASingle: boolean;
-  meetsASFACouple: boolean;
 }
-
-const ASFA_SINGLE = 51278;
-const ASFA_COUPLE = 72148;
 
 function calculateProjection(
   currentAge: number,
@@ -58,8 +51,9 @@ function calculateProjection(
   currentBalance: number,
   salary: number,
   sgRate: number,
-  extraContributions: number,
-  returnRate: number
+  extraContributionsPerYear: number,
+  returnRate: number,
+  inflationRate: number
 ): ProjectionResult {
   const rows: YearRow[] = [];
   let balance = currentBalance;
@@ -73,26 +67,24 @@ function calculateProjection(
     const age = currentAge + i;
     const year = new Date().getFullYear() + i;
 
-    // Employer SG contribution
     const employerContrib = salary * (sgRate / 100);
     totalEmployerContribs += employerContrib;
 
-    // Voluntary contribution
-    const voluntaryContrib = extraContributions * 12;
+    const voluntaryContrib = extraContributionsPerYear;
     totalVoluntaryContribs += voluntaryContrib;
 
-    // Total contributions this year
     const totalContribThisYear = employerContrib + voluntaryContrib;
 
-    // Investment return (mid-year approximation: average of start and end balance)
+    // Mid-year approximation for investment return
     const avgBalance = balance + totalContribThisYear / 2;
     const investmentReturn = avgBalance * (returnRate / 100);
     totalInvestmentReturns += investmentReturn;
 
-    // New balance
     balance = balance + totalContribThisYear + investmentReturn;
 
-    // Track cumulative for stacked chart
+    // Real (inflation-adjusted) balance in today's dollars
+    const realBalance = balance / Math.pow(1 + inflationRate / 100, i);
+
     const cumulativeContribs = totalEmployerContribs + totalVoluntaryContribs;
     const cumulativeInvestment = totalInvestmentReturns;
 
@@ -103,41 +95,44 @@ function calculateProjection(
       voluntaryContributions: voluntaryContrib,
       investmentReturns: investmentReturn,
       balance: Math.round(balance),
+      realBalance: Math.round(realBalance),
       contributionsTotal: Math.round(cumulativeContribs),
       investmentGrowth: Math.round(cumulativeInvestment),
     });
   }
 
-  const annualIncomeRetirement = balance * 0.04;
-  const meetsASFASingle = annualIncomeRetirement >= ASFA_SINGLE;
-  const meetsASFACouple = annualIncomeRetirement >= ASFA_COUPLE;
+  // Real balance at retirement
+  const realRetirementBalance = balance / Math.pow(1 + inflationRate / 100, yearsToRetirement);
+
+  // Monthly income via annuity formula (20 years, using investment return rate)
+  const monthlyRate = returnRate / 12 / 100;
+  const n = 240; // 20 years × 12 months
+  const monthlyIncome =
+    monthlyRate > 0
+      ? (balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -n))
+      : balance / n;
 
   return {
     rows,
-    retirementBalance: balance,
-    annualIncomeRetirement,
+    retirementBalance: Math.round(balance),
+    realRetirementBalance: Math.round(realRetirementBalance),
+    monthlyIncome: Math.round(monthlyIncome),
     yearsToRetirement,
-    totalEmployerContributions: totalEmployerContribs,
-    totalVoluntaryContributions: totalVoluntaryContribs,
-    totalInvestmentReturns: totalInvestmentReturns,
-    meetsASFASingle,
-    meetsASFACouple,
+    totalEmployerContributions: Math.round(totalEmployerContribs),
+    totalVoluntaryContributions: Math.round(totalVoluntaryContribs),
+    totalInvestmentReturns: Math.round(totalInvestmentReturns),
   };
 }
-
-// --- Component ---
 
 export default function SuperannuationRetirementCalculator() {
   const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(67);
-  const [currentBalance, setCurrentBalance] = useState(50000);
-  const [salary, setSalary] = useState(85000);
+  const [currentBalance, setCurrentBalance] = useState(25000);
+  const [salary, setSalary] = useState(80000);
   const [sgRate, setSgRate] = useState(11.5);
   const [extraContributions, setExtraContributions] = useState(0);
   const [returnRate, setReturnRate] = useState(7);
-  const [retirementType, setRetirementType] = useState<"single" | "couple">(
-    "single"
-  );
+  const [inflationRate, setInflationRate] = useState(2.5);
 
   const results = useMemo(
     () =>
@@ -148,31 +143,17 @@ export default function SuperannuationRetirementCalculator() {
         salary,
         sgRate,
         extraContributions,
-        returnRate
+        returnRate,
+        inflationRate
       ),
-    [currentAge, retirementAge, currentBalance, salary, sgRate, extraContributions, returnRate]
+    [currentAge, retirementAge, currentBalance, salary, sgRate, extraContributions, returnRate, inflationRate]
   );
-
-  const asfalThreshold =
-    retirementType === "single" ? ASFA_SINGLE : ASFA_COUPLE;
-  const asfalProgress = Math.min(
-    (results.annualIncomeRetirement / asfalThreshold) * 100,
-    100
-  );
-  const asfalBgColor =
-    asfalProgress >= 100
-      ? "bg-green-50 border-green-200"
-      : asfalProgress >= 60
-        ? "bg-amber-50 border-amber-200"
-        : "bg-red-50 border-red-200";
 
   return (
     <div className="space-y-8">
       {/* Input Panel */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">
-          Your Details
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-6">Your Details</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Current Age */}
@@ -274,7 +255,7 @@ export default function SuperannuationRetirementCalculator() {
           {/* SG Rate */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Employer SG Rate (%): <span className="text-blue-600">{sgRate.toFixed(1)}</span>%
+              Employer SG Rate: <span className="text-blue-600">{sgRate.toFixed(1)}%</span>
             </label>
             <input
               type="range"
@@ -299,14 +280,13 @@ export default function SuperannuationRetirementCalculator() {
           {/* Extra Contributions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Extra Voluntary Contributions ($/mo): {formatCurrency(extraContributions * 12)}
-              /yr
+              Additional Voluntary Contributions ($/year): {formatCurrency(extraContributions)}
             </label>
             <input
               type="range"
               min="0"
-              max="5000"
-              step="50"
+              max="50000"
+              step="500"
               value={extraContributions}
               onChange={(e) => setExtraContributions(Number(e.target.value))}
               className="w-full"
@@ -314,8 +294,8 @@ export default function SuperannuationRetirementCalculator() {
             <input
               type="number"
               min="0"
-              max="5000"
-              step="50"
+              max="50000"
+              step="500"
               value={extraContributions}
               onChange={(e) => setExtraContributions(Number(e.target.value))}
               className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -325,7 +305,7 @@ export default function SuperannuationRetirementCalculator() {
           {/* Return Rate */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Expected Investment Return (% p.a.): <span className="text-blue-600">{returnRate.toFixed(1)}</span>%
+              Expected Investment Return: <span className="text-blue-600">{returnRate.toFixed(1)}% p.a.</span>
             </label>
             <input
               type="range"
@@ -347,175 +327,76 @@ export default function SuperannuationRetirementCalculator() {
             />
           </div>
 
-          {/* Retirement Type Toggle */}
+          {/* Inflation Rate */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Retirement Status
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Expected Inflation: <span className="text-blue-600">{inflationRate.toFixed(2)}% p.a.</span>
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="retirement-type"
-                  value="single"
-                  checked={retirementType === "single"}
-                  onChange={(e) =>
-                    setRetirementType(e.target.value as "single" | "couple")
-                  }
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Single</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  name="retirement-type"
-                  value="couple"
-                  checked={retirementType === "couple"}
-                  onChange={(e) =>
-                    setRetirementType(e.target.value as "single" | "couple")
-                  }
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Couple</span>
-              </label>
-            </div>
+            <input
+              type="range"
+              min="0"
+              max="8"
+              step="0.25"
+              value={inflationRate}
+              onChange={(e) => setInflationRate(Number(e.target.value))}
+              className="w-full"
+            />
+            <input
+              type="number"
+              min="0"
+              max="8"
+              step="0.25"
+              value={inflationRate}
+              onChange={(e) => setInflationRate(Number(e.target.value))}
+              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
           </div>
         </div>
       </div>
 
-      {/* Hero Result Card */}
-      <div className="bg-blue-700 rounded-xl p-6 text-white text-center">
-        <p className="text-sm text-blue-100 mb-2">Projected Balance at Retirement (Age {retirementAge})</p>
-        <p className="text-4xl font-bold">{formatCurrency(results.retirementBalance)}</p>
+      {/* Hero Result Card — nominal + real */}
+      <div className="bg-blue-700 rounded-xl p-6 text-white">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="text-center">
+            <p className="text-sm text-blue-100 mb-1">Projected Balance at Retirement (Age {retirementAge})</p>
+            <p className="text-4xl font-bold">{formatCurrency(results.retirementBalance)}</p>
+            <p className="text-xs text-blue-200 mt-1">Nominal (future dollars)</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-blue-100 mb-1">Real Value (Today&apos;s Dollars)</p>
+            <p className="text-4xl font-bold">{formatCurrency(results.realRetirementBalance)}</p>
+            <p className="text-xs text-blue-200 mt-1">Inflation-adjusted at {inflationRate.toFixed(2)}% p.a.</p>
+          </div>
+        </div>
       </div>
 
-      {/* Metric Cards Grid */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
-          <p className="text-xs text-gray-500 mb-1">Annual Retirement Income</p>
-          <p className="text-lg font-bold text-gray-900">
-            {formatCurrency(results.annualIncomeRetirement)}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">(4% rule)</p>
+          <p className="text-xs text-gray-500 mb-1">Monthly Income (20 yrs)</p>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(results.monthlyIncome)}</p>
+          <p className="text-xs text-gray-400 mt-1">annuity formula</p>
         </div>
-
         <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
           <p className="text-xs text-gray-500 mb-1">Years to Retirement</p>
           <p className="text-lg font-bold text-gray-900">{results.yearsToRetirement}</p>
           <p className="text-xs text-gray-400 mt-1">years</p>
         </div>
-
         <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
           <p className="text-xs text-gray-500 mb-1">Total Employer SG</p>
-          <p className="text-lg font-bold text-gray-900">
-            {formatCurrency(results.totalEmployerContributions)}
-          </p>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(results.totalEmployerContributions)}</p>
           <p className="text-xs text-gray-400 mt-1">contributions</p>
         </div>
-
         <div className="border border-gray-200 rounded-xl p-4 bg-white text-center">
           <p className="text-xs text-gray-500 mb-1">Total Investment Returns</p>
-          <p className="text-lg font-bold text-gray-900">
-            {formatCurrency(results.totalInvestmentReturns)}
-          </p>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(results.totalInvestmentReturns)}</p>
           <p className="text-xs text-gray-400 mt-1">growth</p>
         </div>
       </div>
 
-      {/* ASFA Comparison */}
-      <div className={`border border-gray-200 rounded-xl p-6 ${asfalBgColor}`}>
-        <h3 className="font-semibold text-gray-900 mb-4">ASFA Comfortable Retirement Standard</h3>
-
-        <div className="space-y-4">
-          {/* Single */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Single: $51,278/yr
-                {results.meetsASFASingle ? (
-                  <span className="ml-2 text-green-600">✓</span>
-                ) : (
-                  <span className="ml-2 text-red-600">✗</span>
-                )}
-              </span>
-              <span className="text-sm text-gray-600">
-                {formatCurrency(results.annualIncomeRetirement)}
-              </span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${
-                  results.annualIncomeRetirement >= ASFA_SINGLE
-                    ? "bg-green-500"
-                    : results.annualIncomeRetirement >= ASFA_SINGLE * 0.6
-                      ? "bg-amber-500"
-                      : "bg-red-500"
-                }`}
-                style={{ width: `${Math.min((results.annualIncomeRetirement / ASFA_SINGLE) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Couple */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Couple: $72,148/yr
-                {results.meetsASFACouple ? (
-                  <span className="ml-2 text-green-600">✓</span>
-                ) : (
-                  <span className="ml-2 text-red-600">✗</span>
-                )}
-              </span>
-              <span className="text-sm text-gray-600">
-                {formatCurrency(results.annualIncomeRetirement)}
-              </span>
-            </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${
-                  results.annualIncomeRetirement >= ASFA_COUPLE
-                    ? "bg-green-500"
-                    : results.annualIncomeRetirement >= ASFA_COUPLE * 0.6
-                      ? "bg-amber-500"
-                      : "bg-red-500"
-                }`}
-                style={{ width: `${Math.min((results.annualIncomeRetirement / ASFA_COUPLE) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {results.meetsASFASingle && retirementType === "single" && (
-          <p className="text-sm text-green-700 mt-4">
-            Your projected income of {formatCurrency(results.annualIncomeRetirement)}/yr meets
-            the comfortable retirement standard for a single person.
-          </p>
-        )}
-        {results.meetsASFACouple && retirementType === "couple" && (
-          <p className="text-sm text-green-700 mt-4">
-            Your projected income of {formatCurrency(results.annualIncomeRetirement)}/yr meets
-            the comfortable retirement standard for a couple.
-          </p>
-        )}
-        {!results.meetsASFASingle && retirementType === "single" && (
-          <p className="text-sm text-amber-700 mt-4">
-            Your projected income is {formatCurrency(ASFA_SINGLE - results.annualIncomeRetirement)} short of the comfortable
-            retirement standard. Consider increasing contributions or extending your working life.
-          </p>
-        )}
-        {!results.meetsASFACouple && retirementType === "couple" && (
-          <p className="text-sm text-amber-700 mt-4">
-            Your projected income is {formatCurrency(ASFA_COUPLE - results.annualIncomeRetirement)} short of the comfortable
-            retirement standard. Consider increasing contributions or extending your working life.
-          </p>
-        )}
-      </div>
-
       {/* Chart */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
-        <h3 className="font-semibold text-gray-900 mb-4">Super Balance Over Time</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Super Balance Growth Curve</h3>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={results.rows}>
             <defs>
@@ -576,6 +457,36 @@ export default function SuperannuationRetirementCalculator() {
         </ResponsiveContainer>
       </div>
 
+      {/* Year-by-Year Table */}
+      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h3 className="font-semibold text-gray-900">Year-by-Year Projection</h3>
+          <p className="text-xs text-gray-500 mt-1">Nominal vs real (inflation-adjusted) balance over time</p>
+        </div>
+        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Age</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Year</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Balance (Nominal)</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Balance (Real)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.rows.map((row) => (
+                <tr key={row.age} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="px-4 py-2 font-medium text-gray-800">{row.age}</td>
+                  <td className="px-4 py-2 text-gray-500">{row.year}</td>
+                  <td className="px-4 py-2 text-right text-gray-900 font-medium">{formatCurrency(row.balance)}</td>
+                  <td className="px-4 py-2 text-right text-blue-700">{formatCurrency(row.realBalance)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Education Section */}
       <div className="border border-gray-200 rounded-xl p-6 bg-white">
         <h3 className="font-semibold text-gray-900 mb-4">How Super Works in Australia</h3>
@@ -598,10 +509,10 @@ export default function SuperannuationRetirementCalculator() {
             outside super.
           </p>
           <p>
-            <strong>Access Age:</strong> You cannot access your super until age 55 (rising to 60 by
-            2024) except in limited circumstances (severe financial hardship, terminal illness, etc.).
-            From your preservation age until age 60, you can access super as a transition-to-retirement
-            income stream.
+            <strong>Monthly Income (Annuity Formula):</strong> This calculator uses the present value
+            annuity formula to estimate the monthly income your balance could fund for 20 years at your
+            chosen investment return rate: PMT = PV × r / (1 − (1+r)^−240), where r is the monthly
+            return rate and 240 = 20 years of monthly payments.
           </p>
         </div>
       </div>

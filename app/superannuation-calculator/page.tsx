@@ -5,9 +5,9 @@ import AdUnit from "../components/AdUnit";
 
 export const metadata: Metadata = {
   title:
-    "Superannuation Calculator Australia 2026 — Retirement Projection",
+    "Superannuation Calculator Australia 2026 — Project Your Retirement Balance",
   description:
-    "Project your superannuation balance at retirement. See how your super grows, estimated annual retirement income using the 4% drawdown rule, and whether you&apos;ll meet the ASFA comfortable retirement standard.",
+    "Calculate your projected superannuation balance at retirement. Updated for 11.5% SG rate 2026. Free AU super calculator.",
   keywords: [
     "superannuation calculator",
     "super retirement calculator australia",
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title:
-      "Superannuation Calculator Australia 2026 — Retirement Projection",
+      "Superannuation Calculator Australia 2026 — Project Your Retirement Balance",
     description:
-      "Project your super balance and retirement income. ASFA comfortable retirement comparison included.",
+      "Calculate your projected superannuation balance at retirement. Updated for 11.5% SG rate 2026. Free AU super calculator.",
     type: "website",
   },
   alternates: {
