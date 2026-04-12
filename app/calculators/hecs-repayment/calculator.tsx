@@ -5,30 +5,31 @@ import { useState, useMemo } from "react";
 // ATO 2025-26 HELP repayment thresholds (exact values)
 const REPAYMENT_THRESHOLDS = [
   { min: 0, max: 54434, rate: 0.0 },
-  { min: 54435, max: 62850, rate: 0.01 },
-  { min: 62851, max: 66620, rate: 0.02 },
+  { min: 54435, max: 62849, rate: 0.01 },
+  { min: 62850, max: 66620, rate: 0.02 },
   { min: 66621, max: 70618, rate: 0.025 },
   { min: 70619, max: 74855, rate: 0.03 },
   { min: 74856, max: 79346, rate: 0.035 },
-  { min: 79347, max: 84107, rate: 0.04 },
-  { min: 84108, max: 89154, rate: 0.045 },
+  { min: 79347, max: 84108, rate: 0.04 },
+  { min: 84109, max: 89154, rate: 0.045 },
   { min: 89155, max: 94503, rate: 0.05 },
   { min: 94504, max: 100174, rate: 0.055 },
   { min: 100175, max: 106185, rate: 0.06 },
   { min: 106186, max: 112556, rate: 0.065 },
-  { min: 112557, max: 119309, rate: 0.07 },
-  { min: 119310, max: 126468, rate: 0.075 },
+  { min: 112557, max: 119310, rate: 0.07 },
+  { min: 119311, max: 126468, rate: 0.075 },
   { min: 126469, max: 134056, rate: 0.08 },
-  { min: 134057, max: 142099, rate: 0.085 },
-  { min: 142100, max: 150623, rate: 0.09 },
-  { min: 150624, max: 159659, rate: 0.095 },
-  { min: 159660, max: Infinity, rate: 0.1 },
+  { min: 134057, max: 142100, rate: 0.085 },
+  { min: 142101, max: 150626, rate: 0.09 },
+  { min: 150627, max: 159663, rate: 0.095 },
+  { min: 159664, max: Infinity, rate: 0.1 },
 ];
 
 interface SimulationRow {
   year: number;
   income: number;
   rate: number;
+  openingBalance: number;
   mandatoryRepayment: number;
   extraRepayment: number;
   totalRepayment: number;
@@ -40,6 +41,7 @@ interface SimulationResult {
   rows: SimulationRow[];
   yearCleared: number | null;
   totalIndexation: number;
+  totalRepaid: number;
 }
 
 function getRepaymentRate(income: number): number {
@@ -60,10 +62,13 @@ function simulate(inputs: {
   let income = inputs.annualIncome;
   const rows: SimulationRow[] = [];
   let totalIndexation = 0;
+  let totalRepaid = 0;
   let yearCleared: number | null = null;
 
   for (let year = 1; year <= inputs.projectionYears; year++) {
     if (debt <= 0) break;
+
+    const openingBalance = debt;
 
     // 1. Apply CPI indexation FIRST
     const indexation = debt * (inputs.cpiRate / 100);
@@ -80,11 +85,13 @@ function simulate(inputs: {
     // 4. Apply repayment (don't go below 0)
     const actualRepayment = Math.min(totalRepayment, debt);
     debt = Math.max(0, debt - actualRepayment);
+    totalRepaid += actualRepayment;
 
     rows.push({
       year,
       income: Math.round(income),
       rate,
+      openingBalance: Math.round(openingBalance),
       mandatoryRepayment: Math.round(mandatoryRepayment),
       extraRepayment: inputs.showExtraRepayment ? inputs.extraRepayment : 0,
       totalRepayment: Math.round(actualRepayment),
@@ -101,7 +108,7 @@ function simulate(inputs: {
     income *= (1 + inputs.incomeGrowth / 100);
   }
 
-  return { rows, yearCleared, totalIndexation: Math.round(totalIndexation) };
+  return { rows, yearCleared, totalIndexation: Math.round(totalIndexation), totalRepaid: Math.round(totalRepaid) };
 }
 
 function formatCurrency(value: number): string {
@@ -118,11 +125,11 @@ function formatPercentage(value: number): string {
 }
 
 export default function HECSCalculator() {
-  const [currentDebt, setCurrentDebt] = useState(30000);
-  const [annualIncome, setAnnualIncome] = useState(80000);
+  const [currentDebt, setCurrentDebt] = useState(26000);
+  const [annualIncome, setAnnualIncome] = useState(75000);
   const [incomeGrowth, setIncomeGrowth] = useState(3);
   const [projectionYears, setProjectionYears] = useState(20);
-  const [cpiRate, setCpiRate] = useState(3.5);
+  const [cpiRate, setCpiRate] = useState(4.7);
   const [extraRepayment, setExtraRepayment] = useState(0);
   const [showExtraRepayment, setShowExtraRepayment] = useState(false);
   const [expandedTable, setExpandedTable] = useState(false);
@@ -272,28 +279,36 @@ export default function HECSCalculator() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Years Until Debt Free */}
           <div className="bg-white rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-500 mb-1">Years Until Debt Free</p>
-            <p className="text-2xl font-bold text-blue-800">
+            <p className="text-sm text-gray-500 mb-1">Years Until Cleared</p>
+            <p className={`text-2xl font-bold ${
+              result.yearCleared === null
+                ? "text-red-600"
+                : result.yearCleared >= 20
+                ? "text-red-600"
+                : result.yearCleared >= 10
+                ? "text-amber-600"
+                : "text-green-600"
+            }`}>
               {result.yearCleared !== null ? result.yearCleared : `${projectionYears}+`}
             </p>
           </div>
 
           {/* Annual Repayment (Year 1) */}
           <div className="bg-white rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-500 mb-1">Annual Repayment (Year 1)</p>
+            <p className="text-sm text-gray-500 mb-1">Repayment This Year</p>
             <p className="text-2xl font-bold text-blue-800">{formatCurrency(firstYearRepayment)}</p>
-          </div>
-
-          {/* Total Indexation Paid */}
-          <div className="bg-white rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-500 mb-1">Total Indexation Paid</p>
-            <p className="text-2xl font-bold text-blue-800">{formatCurrency(result.totalIndexation)}</p>
           </div>
 
           {/* Repayment Rate (Year 1) */}
           <div className="bg-white rounded-lg p-4 text-center">
-            <p className="text-sm text-gray-500 mb-1">Repayment Rate (Year 1)</p>
+            <p className="text-sm text-gray-500 mb-1">Repayment Rate</p>
             <p className="text-2xl font-bold text-blue-800">{formatPercentage(firstYearRate)}</p>
+          </div>
+
+          {/* Total Paid Back */}
+          <div className="bg-white rounded-lg p-4 text-center">
+            <p className="text-sm text-gray-500 mb-1">Total Paid Back</p>
+            <p className="text-2xl font-bold text-blue-800">{formatCurrency(result.totalRepaid)}</p>
           </div>
         </div>
       </div>
@@ -301,7 +316,7 @@ export default function HECSCalculator() {
       {/* Year-by-Year Table */}
       {result.rows.length > 0 && (
         <div className="border border-gray-200 rounded-xl p-6 bg-white">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900">Year-by-Year Breakdown</h2>
             {result.rows.length > 10 && (
               <button
@@ -313,27 +328,36 @@ export default function HECSCalculator() {
             )}
           </div>
 
+          <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-4">
+            &#9432; Indexation is applied on 1 June each year based on CPI. The default rate of 4.7% reflects the 2025 indexation applied to HELP debts.
+          </p>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Year</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Income</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Rate</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Mandatory Repay</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Indexation</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Closing Balance</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-700">Year</th>
+                  <th className="text-right px-3 py-3 font-semibold text-gray-700">Income</th>
+                  <th className="text-right px-3 py-3 font-semibold text-gray-700">Opening Balance</th>
+                  <th className="text-right px-3 py-3 font-semibold text-gray-700">Indexation Added</th>
+                  <th className="text-right px-3 py-3 font-semibold text-gray-700">Repayment</th>
+                  <th className="text-right px-3 py-3 font-semibold text-gray-700">Closing Balance</th>
                 </tr>
               </thead>
               <tbody>
                 {result.rows.slice(0, expandedTable ? result.rows.length : 10).map((row) => (
-                  <tr key={row.year} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-900">{row.year}</td>
-                    <td className="text-right px-4 py-3 text-gray-900">{formatCurrency(row.income)}</td>
-                    <td className="text-right px-4 py-3 text-gray-900">{formatPercentage(row.rate)}</td>
-                    <td className="text-right px-4 py-3 text-gray-900">{formatCurrency(row.mandatoryRepayment)}</td>
-                    <td className="text-right px-4 py-3 text-gray-900">{formatCurrency(row.indexation)}</td>
-                    <td className="text-right px-4 py-3 font-semibold text-blue-800">
+                  <tr
+                    key={row.year}
+                    className={`border-b border-gray-100 last:border-0 transition-colors ${
+                      row.closingBalance <= 0 ? "bg-green-50 hover:bg-green-100" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-3 py-3 text-gray-900">{row.year}</td>
+                    <td className="text-right px-3 py-3 text-gray-900">{formatCurrency(row.income)}</td>
+                    <td className="text-right px-3 py-3 text-gray-900">{formatCurrency(row.openingBalance)}</td>
+                    <td className="text-right px-3 py-3 text-orange-700">{formatCurrency(row.indexation)}</td>
+                    <td className="text-right px-3 py-3 text-gray-900">{formatCurrency(row.totalRepayment)}</td>
+                    <td className="text-right px-3 py-3 font-semibold text-blue-800">
                       {formatCurrency(row.closingBalance)}
                     </td>
                   </tr>
@@ -341,12 +365,24 @@ export default function HECSCalculator() {
               </tbody>
             </table>
           </div>
-
-          {result.rows.length === 0 && (
-            <p className="text-gray-600 text-center py-4">No data to display</p>
-          )}
         </div>
       )}
+
+      {/* Affiliate: Savings Accounts Section */}
+      <div className="border border-green-200 rounded-xl p-6 bg-green-50">
+        <h3 className="font-semibold text-gray-900 mb-2">Want to pay off HECS faster?</h3>
+        <p className="text-sm text-gray-700 mb-4">
+          Earning more interest on your savings can help offset HECS indexation. Compare high-interest savings accounts to find the best rate.
+        </p>
+        <a
+          href="https://www.canstar.com.au/savings-accounts/"
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+        >
+          Compare Savings Accounts →
+        </a>
+      </div>
     </div>
   );
 }

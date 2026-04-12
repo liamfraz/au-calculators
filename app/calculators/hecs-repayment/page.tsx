@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import HECSCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title:
@@ -186,6 +187,42 @@ export default function HecsRepaymentPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Related Calculators */}
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Related Calculators</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/calculators/income-tax"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Income Tax Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Calculate your annual tax and take-home pay</p>
+            </Link>
+            <Link
+              href="/calculators/super"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Super Contributions Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Model employer and voluntary super contributions</p>
+            </Link>
+            <Link
+              href="/calculators/contractor-vs-employee"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Contractor vs Employee</p>
+              <p className="text-gray-500 text-xs mt-1">Compare contractor and PAYG take-home pay</p>
+            </Link>
+          </div>
+        </section>
+
+        {/* Disclaimer */}
+        <section className="mt-12 border border-amber-200 rounded-xl p-6 bg-amber-50">
+          <h3 className="font-semibold text-amber-900 mb-2">Disclaimer</h3>
+          <p className="text-sm text-amber-800 leading-relaxed">
+            This calculator provides estimates only and does not constitute financial advice. HECS-HELP repayment thresholds are based on 2025&ndash;26 ATO rates and may change each financial year. Indexation rates vary annually. Consult a qualified financial adviser for personalised advice.
+          </p>
         </section>
       </div>
     </>
