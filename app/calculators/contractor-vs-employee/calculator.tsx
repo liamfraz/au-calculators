@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 // ─── ATO 2025-26 Tax Brackets ────────────────────────────────

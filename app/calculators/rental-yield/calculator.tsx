@@ -235,7 +235,7 @@ export default function RentalYieldCalculator({
       { label: "Water Rates", value: waterRates },
       { label: "Other Expenses", value: otherExpenses },
     ],
-    [councilRates, insurance, maintenance, results.managementFeeAmount, strata, waterRates, otherExpenses],
+    [councilRates, insurance, maintenance, managementFeePercent, results.managementFeeAmount, strata, waterRates, otherExpenses],
   );
 
   const yieldComparison = useMemo(() => {
