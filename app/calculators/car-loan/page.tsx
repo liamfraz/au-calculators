@@ -3,11 +3,13 @@ import CarLoanCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
-  title: "Car Loan Calculator Australia 2026 | Free Repayment Estimator",
+  title: "AU Car Loan Calculator 2026 — Monthly Repayments & Interest",
   description:
-    "Free Australian car loan repayment calculator. Enter vehicle price, deposit, interest rate, and loan term to calculate monthly repayments, total interest, and view a full amortization schedule. Compare rates and balloon payment options.",
+    "Free Australian car loan repayment calculator. Calculate monthly, fortnightly, or weekly repayments on any loan amount. Compare your rate to CBA, ANZ, Westpac, NAB & Latitude. Includes balloon payment, amortization table, and RBA rate context.",
   keywords: [
     "car loan calculator australia",
+    "car repayment calculator",
+    "auto loan calculator au",
     "car loan repayment calculator",
     "vehicle finance calculator",
     "car finance calculator australia",
@@ -16,12 +18,13 @@ export const metadata: Metadata = {
     "how much are car loan repayments",
     "car finance repayments australia 2026",
     "car loan comparison rate",
-    "car loan calculator with deposit",
+    "monthly car repayments australia",
+    "car loan calculator 30000",
   ],
   openGraph: {
-    title: "Car Loan Calculator Australia 2026 | Free Repayment Estimator",
+    title: "AU Car Loan Calculator 2026 — Monthly Repayments & Interest",
     description:
-      "Calculate your car loan repayments, total interest, and compare rates. Free vehicle finance calculator with balloon payment option for Australians.",
+      "Calculate car loan repayments, total interest, and compare your rate to major AU lenders. Free calculator with balloon payment, amortization schedule and RBA rate comparison.",
     type: "website",
   },
 };
@@ -62,9 +65,9 @@ const faqs = [
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Car Loan Calculator Australia 2026",
+  name: "AU Car Loan Calculator 2026 — Monthly Repayments & Interest",
   description:
-    "Free car loan repayment calculator for Australians. Calculate vehicle finance repayments, total interest, balloon payments, and compare different interest rates.",
+    "Free car loan repayment calculator for Australians. Calculate monthly, fortnightly, or weekly repayments, total interest, balloon payments, and compare your rate to major AU lenders.",
   url: "https://au-calculators.vercel.app/calculators/car-loan",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Any",
@@ -130,13 +133,13 @@ export default function CarLoanPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Car Loan Calculator Australia 2026
+            AU Car Loan Calculator 2026 — Monthly Repayments &amp; Interest
           </h1>
           <p className="text-gray-600">
-            Calculate your car loan repayments by entering the vehicle price, deposit, interest rate,
-            and loan term. Compare repayments at different rates, add a balloon payment, and view a
-            full amortization schedule. Pre-filled with the current Australian average car loan rate
-            of 7.5%.
+            Calculate your car loan repayments by entering the loan amount, interest rate, and loan term.
+            Switch between monthly, fortnightly, and weekly repayments. Compare your rate to major Australian
+            lenders (CBA, ANZ, Westpac, NAB, Latitude) and the RBA cash rate. Includes balloon payment support
+            and a full amortization schedule. Pre-filled with the current Australian average car loan rate of 7.5%.
           </p>
         </div>
 

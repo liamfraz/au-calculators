@@ -80,7 +80,7 @@ export default function RootLayout({
                 Offset
               </Link>
               <Link
-                href="/car-loan-calculator"
+                href="/calculators/car-loan"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
                 Car Loan

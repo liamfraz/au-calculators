@@ -454,6 +454,57 @@ export default function CarLoanCalculator() {
         </div>
       </div>
 
+      {/* How does your rate compare? — RBA + AU Lender context */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="font-semibold text-gray-800">How does your rate compare?</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Your rate of <strong>{inputs.interestRate.toFixed(2)}%</strong> vs the RBA cash rate and typical AU lender rates
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Lender / Benchmark</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Typical Rate</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">vs Your Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: "RBA Cash Rate (Feb 2025)", rate: 4.10, note: "Benchmark — not a lending rate" },
+                { label: "CBA Car Loan", rate: 7.99 },
+                { label: "ANZ Car Loan", rate: 8.49 },
+                { label: "Westpac Car Loan", rate: 8.24 },
+                { label: "NAB Personal Loan (secured)", rate: 7.99 },
+                { label: "Latitude Car Loan", rate: 9.99 },
+              ].map((row) => {
+                const diff = inputs.interestRate - row.rate;
+                return (
+                  <tr key={row.label} className="border-t border-gray-100 hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-800">
+                      {row.label}
+                      {row.note && <span className="block text-xs text-gray-400">{row.note}</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">{row.rate.toFixed(2)}%</td>
+                    <td className={`px-4 py-3 text-right font-medium ${diff < 0 ? "text-green-600" : diff > 0 ? "text-red-600" : "text-gray-600"}`}>
+                      {diff === 0 ? "—" : diff < 0 ? `${diff.toFixed(2)}%` : `+${diff.toFixed(2)}%`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
+          <p className="text-xs text-gray-500">
+            Rates are indicative only. Actual rates depend on your credit profile and loan type (secured/unsecured). RBA cash rate as of February 2025 (
+            <a href="https://www.rba.gov.au" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">rba.gov.au</a>).
+          </p>
+        </div>
+      </div>
+
       {/* Comparison Rate Explanation + ASIC MoneySmart */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
         <h3 className="font-semibold text-amber-900 mb-2">Understanding Comparison Rates</h3>
