@@ -11,13 +11,13 @@ type PropertyType = "established" | "new" | "vacant";
 
 function calcNSW(value: number): number {
   if (value <= 0) return 0;
-  if (value <= 17000) return value * 0.0125;
-  if (value <= 37000) return 212 + (value - 17000) * 0.015;
-  if (value <= 99000) return 512 + (value - 37000) * 0.0175;
-  if (value <= 372000) return 1597 + (value - 99000) * 0.035;
-  if (value <= 1240000) return 11152 + (value - 372000) * 0.045;
-  if (value <= 3721000) return 50212 + (value - 1240000) * 0.055;
-  return 186667 + (value - 3721000) * 0.07;
+  if (value <= 14000) return value * 0.0125;
+  if (value <= 30000) return 175 + (value - 14000) * 0.015;
+  if (value <= 80000) return 415 + (value - 30000) * 0.0175;
+  if (value <= 300000) return 1290 + (value - 80000) * 0.035;
+  if (value <= 1000000) return 8990 + (value - 300000) * 0.045;
+  if (value <= 3000000) return 40490 + (value - 1000000) * 0.055;
+  return 150490 + (value - 3000000) * 0.07;
 }
 
 function calcVICGeneral(value: number): number {

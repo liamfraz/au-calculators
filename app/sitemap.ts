@@ -327,6 +327,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/stamp-duty-calculator`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
     ...["nsw", "vic", "qld", "wa", "sa", "tas", "act", "nt"].map((state) => ({
       url: `${baseUrl}/stamp-duty-calculator/${state}`,
       lastModified: new Date(),
