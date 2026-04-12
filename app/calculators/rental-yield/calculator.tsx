@@ -14,6 +14,15 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function formatCurrencyExact(value: number): string {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function formatPercent(value: number): string {
   return `${value.toFixed(2)}%`;
 }
@@ -32,13 +41,13 @@ function yieldBorderBg(yieldPct: number): string {
 
 // --- City averages ---
 
-const cityAverages = [
-  { city: "Sydney", grossYield: 3.2 },
-  { city: "Melbourne", grossYield: 3.5 },
-  { city: "Brisbane", grossYield: 4.2 },
-  { city: "Adelaide", grossYield: 4.3 },
-  { city: "Perth", grossYield: 4.5 },
-  { city: "Hobart", grossYield: 4.8 },
+const CITY_AVERAGES = [
+  { city: "Sydney", grossYield: 3.2, rentRange: "$550–$900/wk", medianPrice: "$1.4M" },
+  { city: "Melbourne", grossYield: 3.5, rentRange: "$450–$750/wk", medianPrice: "$950K" },
+  { city: "Brisbane", grossYield: 4.2, rentRange: "$550–$750/wk", medianPrice: "$820K" },
+  { city: "Perth", grossYield: 4.5, rentRange: "$600–$850/wk", medianPrice: "$780K" },
+  { city: "Adelaide", grossYield: 4.3, rentRange: "$450–$650/wk", medianPrice: "$720K" },
+  { city: "Hobart", grossYield: 4.8, rentRange: "$450–$600/wk", medianPrice: "$620K" },
 ];
 
 // --- Types ---
@@ -50,7 +59,10 @@ interface PropertyInputs {
   councilRates: number;
   insurance: number;
   maintenance: number;
-  managementFees: number;
+  managementFeePercent: number;
+  depositPercent: number;
+  mortgageRate: number;
+  loanTerm: number;
   strata: number;
   waterRates: number;
   otherExpenses: number;
@@ -64,7 +76,10 @@ function defaultProperty(label: string): PropertyInputs {
     councilRates: 0,
     insurance: 0,
     maintenance: 0,
-    managementFees: 0,
+    managementFeePercent: 8,
+    depositPercent: 20,
+    mortgageRate: 6.2,
+    loanTerm: 30,
     strata: 0,
     waterRates: 0,
     otherExpenses: 0,
@@ -73,19 +88,76 @@ function defaultProperty(label: string): PropertyInputs {
 
 function calcResults(p: PropertyInputs) {
   const annualRent = p.weeklyRent * 52;
-  const totalExpenses =
+
+  // Management fees calculation (percentage-based)
+  const managementFeeAmount = (p.managementFeePercent / 100) * annualRent;
+
+  // Other expenses (excluding management fees)
+  const otherExpensesTotal =
     p.councilRates +
     p.insurance +
     p.maintenance +
-    p.managementFees +
     p.strata +
     p.waterRates +
     p.otherExpenses;
+
+  const totalExpenses = managementFeeAmount + otherExpensesTotal;
+
   const grossYield = p.purchasePrice > 0 ? (annualRent / p.purchasePrice) * 100 : 0;
+
+  // Mortgage calculation
+  const depositAmount = p.purchasePrice * (p.depositPercent / 100);
+  const loanAmount = p.purchasePrice - depositAmount;
+  const monthlyRate = p.mortgageRate / 100 / 12;
+  const totalPeriods = p.loanTerm * 12;
+
+  let monthlyRepayment = 0;
+  if (monthlyRate === 0) {
+    monthlyRepayment = loanAmount / totalPeriods;
+  } else {
+    const numerator = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, totalPeriods));
+    const denominator = Math.pow(1 + monthlyRate, totalPeriods) - 1;
+    monthlyRepayment = numerator / denominator;
+  }
+
+  const annualMortgage = monthlyRepayment * 12;
+
+  // Cash flow calculation
   const netIncome = annualRent - totalExpenses;
+  const annualCashFlow = netIncome - annualMortgage;
+  const cashOnCash = depositAmount > 0 ? (annualCashFlow / depositAmount) * 100 : 0;
+
+  // Net yield (without mortgage)
   const netYield = p.purchasePrice > 0 ? (netIncome / p.purchasePrice) * 100 : 0;
+
+  // Break-even weekly rent
+  let breakEvenWeeklyRent = 0;
+  if (p.depositPercent < 100) {
+    const managementFeeFactor = 1 - p.managementFeePercent / 100;
+    if (managementFeeFactor > 0) {
+      breakEvenWeeklyRent = (otherExpensesTotal + annualMortgage) / (52 * managementFeeFactor);
+    }
+  }
+
   const weeklyNetIncome = netIncome / 52;
-  return { annualRent, grossYield, totalExpenses, netIncome, netYield, weeklyNetIncome };
+
+  return {
+    annualRent,
+    grossYield,
+    totalExpenses,
+    managementFeeAmount,
+    otherExpensesTotal,
+    netIncome,
+    netYield,
+    weeklyNetIncome,
+    depositAmount,
+    loanAmount,
+    monthlyRepayment,
+    annualMortgage,
+    annualCashFlow,
+    cashOnCash,
+    breakEvenWeeklyRent,
+  };
 }
 
 // --- Component ---
@@ -104,7 +176,10 @@ export default function RentalYieldCalculator({
   const [councilRates, setCouncilRates] = useState(2000);
   const [insurance, setInsurance] = useState(1500);
   const [maintenance, setMaintenance] = useState(2000);
-  const [managementFees, setManagementFees] = useState(0);
+  const [managementFeePercent, setManagementFeePercent] = useState(8);
+  const [depositPercent, setDepositPercent] = useState(20);
+  const [mortgageRate, setMortgageRate] = useState(6.2);
+  const [loanTerm, setLoanTerm] = useState(30);
   const [strata, setStrata] = useState(0);
   const [waterRates, setWaterRates] = useState(800);
   const [otherExpenses, setOtherExpenses] = useState(0);
@@ -116,36 +191,51 @@ export default function RentalYieldCalculator({
     defaultProperty("Property B"),
   ]);
 
-  const results = useMemo(() => {
-    const annualRent = weeklyRent * 52;
-    const grossYield = purchasePrice > 0 ? (annualRent / purchasePrice) * 100 : 0;
-    const totalExpenses =
-      councilRates + insurance + maintenance + managementFees + strata + waterRates + otherExpenses;
-    const netIncome = annualRent - totalExpenses;
-    const netYield = purchasePrice > 0 ? (netIncome / purchasePrice) * 100 : 0;
-    const weeklyNetIncome = netIncome / 52;
+  // Test case values for verification comment:
+  // Purchase price: $750,000 | Deposit: 20% ($150,000) | Loan: $600,000
+  // Mortgage rate: 6.2% | Loan term: 30 years
+  // Weekly rent: $600 | Annual rent: $31,200
+  // Council: $2,000 | Insurance: $1,500 | Maintenance: $2,000 | Water: $800 | Strata: $0 | Other: $0
+  // Management fee: 8% × $31,200 = $2,496
+  // Total other expenses: $6,300
+  // Monthly repayment: ~$3,674 (P&I formula)
+  // Annual mortgage: ~$44,087
+  // Gross yield: ($31,200 / $750,000) = 4.16%
+  // Net yield: ($31,200 - $2,496 - $6,300) / $750,000 = $22,404 / $750,000 = 2.99%
+  // Annual cash flow: $31,200 - $2,496 - $6,300 - $44,087 = -$21,683
+  // Cash-on-cash: -$21,683 / $150,000 = -14.46%
+  // Break-even weekly: ($6,300 + $44,087) / (52 × 0.92) = $50,387 / 47.84 = ~$1,053/wk
 
-    return {
-      annualRent,
-      grossYield,
-      totalExpenses,
-      netIncome,
-      netYield,
-      weeklyNetIncome,
+  const results = useMemo(() => {
+    const p: PropertyInputs = {
+      label: "Main Property",
+      purchasePrice,
+      weeklyRent,
+      councilRates,
+      insurance,
+      maintenance,
+      managementFeePercent,
+      depositPercent,
+      mortgageRate,
+      loanTerm,
+      strata,
+      waterRates,
+      otherExpenses,
     };
-  }, [purchasePrice, weeklyRent, councilRates, insurance, maintenance, managementFees, strata, waterRates, otherExpenses]);
+    return calcResults(p);
+  }, [purchasePrice, weeklyRent, councilRates, insurance, maintenance, managementFeePercent, depositPercent, mortgageRate, loanTerm, strata, waterRates, otherExpenses]);
 
   const expenses = useMemo(
     () => [
       { label: "Council Rates", value: councilRates },
       { label: "Insurance", value: insurance },
       { label: "Maintenance", value: maintenance },
-      { label: "Management Fees", value: managementFees },
+      { label: `Management Fees (${managementFeePercent}%)`, value: results.managementFeeAmount },
       { label: "Strata / Body Corp", value: strata },
       { label: "Water Rates", value: waterRates },
       { label: "Other Expenses", value: otherExpenses },
     ],
-    [councilRates, insurance, maintenance, managementFees, strata, waterRates, otherExpenses],
+    [councilRates, insurance, maintenance, results.managementFeeAmount, strata, waterRates, otherExpenses],
   );
 
   const yieldComparison = useMemo(() => {
@@ -154,17 +244,23 @@ export default function RentalYieldCalculator({
       const rent = Math.max(0, weeklyRent + offset);
       const annual = rent * 52;
       const gross = purchasePrice > 0 ? (annual / purchasePrice) * 100 : 0;
-      const totalExp =
-        councilRates + insurance + maintenance + managementFees + strata + waterRates + otherExpenses;
+      const mgmtFee = (managementFeePercent / 100) * annual;
+      const otherExp = councilRates + insurance + maintenance + strata + waterRates + otherExpenses;
+      const totalExp = mgmtFee + otherExp;
       const net = purchasePrice > 0 ? ((annual - totalExp) / purchasePrice) * 100 : 0;
       return { weeklyRent: rent, annualRent: annual, grossYield: gross, netYield: net, isCurrent: offset === 0 };
     });
-  }, [purchasePrice, weeklyRent, councilRates, insurance, maintenance, managementFees, strata, waterRates, otherExpenses]);
+  }, [purchasePrice, weeklyRent, councilRates, insurance, maintenance, managementFeePercent, strata, waterRates, otherExpenses]);
 
   function updateCompareProperty(index: number, field: keyof PropertyInputs, value: string | number) {
     setCompareProperties((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: typeof value === "string" ? value : Math.max(0, value) };
+      if (field === "label") {
+        updated[index] = { ...updated[index], label: typeof value === "string" ? value : String(value) };
+      } else {
+        const numValue = typeof value === "string" ? parseFloat(value) || 0 : Math.max(0, value);
+        updated[index] = { ...updated[index], [field]: numValue };
+      }
       return updated;
     });
   }
@@ -204,7 +300,7 @@ export default function RentalYieldCalculator({
                 step={10000}
                 value={purchasePrice}
                 onChange={(e) => setPurchasePrice(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
@@ -223,9 +319,94 @@ export default function RentalYieldCalculator({
                 step={10}
                 value={weeklyRent}
                 onChange={(e) => setWeeklyRent(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
+          </div>
+
+          {/* Deposit % */}
+          <div>
+            <label htmlFor="depositPercent" className="block text-sm font-medium text-gray-700 mb-1">
+              Deposit %
+            </label>
+            <input
+              id="depositPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={depositPercent}
+              onChange={(e) => setDepositPercent(Math.max(0, Math.min(100, Number(e.target.value))))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">{formatCurrency(results.depositAmount)} deposit, {formatCurrency(results.loanAmount)} loan</p>
+          </div>
+
+          {/* Mortgage Rate % */}
+          <div>
+            <label htmlFor="mortgageRate" className="block text-sm font-medium text-gray-700 mb-1">
+              Mortgage Rate (% p.a.)
+            </label>
+            <input
+              id="mortgageRate"
+              type="number"
+              min={0}
+              max={20}
+              step={0.01}
+              value={mortgageRate}
+              onChange={(e) => setMortgageRate(Math.max(0, Number(e.target.value)))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Loan Term */}
+          <div>
+            <label htmlFor="loanTerm" className="block text-sm font-medium text-gray-700 mb-1">
+              Loan Term (years)
+            </label>
+            <div className="flex gap-2 mb-2">
+              {[25, 30].map((term) => (
+                <button
+                  key={term}
+                  onClick={() => setLoanTerm(term)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    loanTerm === term
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {term}y
+                </button>
+              ))}
+            </div>
+            <input
+              id="loanTerm"
+              type="number"
+              min={1}
+              max={40}
+              step={1}
+              value={loanTerm}
+              onChange={(e) => setLoanTerm(Math.max(1, Number(e.target.value)))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Management Fee % */}
+          <div>
+            <label htmlFor="managementFeePercent" className="block text-sm font-medium text-gray-700 mb-1">
+              Management Fee %
+            </label>
+            <input
+              id="managementFeePercent"
+              type="number"
+              min={0}
+              max={20}
+              step={0.1}
+              value={managementFeePercent}
+              onChange={(e) => setManagementFeePercent(Math.max(0, Number(e.target.value)))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">{formatCurrency(results.managementFeeAmount)}/year</p>
           </div>
         </div>
       </div>
@@ -250,7 +431,7 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={councilRates}
                 onChange={(e) => setCouncilRates(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
@@ -268,7 +449,7 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={insurance}
                 onChange={(e) => setInsurance(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
@@ -286,29 +467,11 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={maintenance}
                 onChange={(e) => setMaintenance(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="managementFees" className="block text-sm font-medium text-gray-700 mb-1">
-              Management Fees
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-              <input
-                id="managementFees"
-                type="number"
-                min={0}
-                step={100}
-                value={managementFees}
-                onChange={(e) => setManagementFees(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Typically 7-10% of annual rent</p>
-          </div>
 
           <div>
             <label htmlFor="strata" className="block text-sm font-medium text-gray-700 mb-1">
@@ -323,7 +486,7 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={strata}
                 onChange={(e) => setStrata(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
@@ -341,7 +504,7 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={waterRates}
                 onChange={(e) => setWaterRates(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
@@ -359,14 +522,14 @@ export default function RentalYieldCalculator({
                 step={100}
                 value={otherExpenses}
                 onChange={(e) => setOtherExpenses(Math.max(0, Number(e.target.value)))}
-                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Results */}
+      {/* Results - Row 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
           <p className="text-sm text-gray-500 mb-1">Annual Rent</p>
@@ -399,6 +562,30 @@ export default function RentalYieldCalculator({
           <p className={`text-2xl font-bold ${results.weeklyNetIncome >= 0 ? "text-gray-900" : "text-red-600"}`}>
             {formatCurrency(Math.round(results.weeklyNetIncome))}
           </p>
+        </div>
+      </div>
+
+      {/* Results - Row 2: Mortgage & Cash Flow */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
+          <p className="text-sm text-gray-500 mb-1">Monthly Loan Repayment</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrencyExact(results.monthlyRepayment)}</p>
+        </div>
+        <div className={`border rounded-xl p-5 text-center ${results.annualCashFlow >= 0 ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+          <p className="text-sm text-gray-500 mb-1">Annual Cash Flow</p>
+          <p className={`text-2xl font-bold ${results.annualCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatCurrency(results.annualCashFlow)}
+          </p>
+        </div>
+        <div className={`border rounded-xl p-5 text-center ${results.cashOnCash >= 0 ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+          <p className="text-sm text-gray-500 mb-1">Cash-on-Cash Return</p>
+          <p className={`text-2xl font-bold ${results.cashOnCash >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatPercent(results.cashOnCash)}
+          </p>
+        </div>
+        <div className="border border-gray-200 rounded-xl p-5 bg-white text-center">
+          <p className="text-sm text-gray-500 mb-1">Break-Even Weekly Rent</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(Math.round(results.breakEvenWeeklyRent))}/wk</p>
         </div>
       </div>
 
@@ -482,8 +669,9 @@ export default function RentalYieldCalculator({
           is highlighted for comparison.
         </p>
 
-        <div className="space-y-3">
-          {cityAverages.map((c) => {
+        {/* Bar Chart Section */}
+        <div className="space-y-3 mb-6">
+          {CITY_AVERAGES.map((c) => {
             const barWidth = Math.min(100, (c.grossYield / 6) * 100);
             const userBarWidth = Math.min(100, (results.grossYield / 6) * 100);
             return (
@@ -516,6 +704,32 @@ export default function RentalYieldCalculator({
               <span className="inline-block w-3 h-0.5 bg-red-500" /> Your gross yield
             </span>
           </div>
+        </div>
+
+        {/* Data Table Section */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-2 pr-4 font-medium text-gray-700">City</th>
+                <th className="text-right py-2 px-4 font-medium text-gray-700">Avg Gross Yield</th>
+                <th className="text-right py-2 px-4 font-medium text-gray-700">Typical Rent Range</th>
+                <th className="text-right py-2 pl-4 font-medium text-gray-700">Median House Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CITY_AVERAGES.map((city) => (
+                <tr key={city.city} className="border-b border-gray-100">
+                  <td className="py-2 pr-4 text-gray-900 font-medium">{city.city}</td>
+                  <td className={`text-right py-2 px-4 font-medium ${yieldColor(city.grossYield)}`}>
+                    {formatPercent(city.grossYield)}
+                  </td>
+                  <td className="text-right py-2 px-4 text-gray-600">{city.rentRange}</td>
+                  <td className="text-right py-2 pl-4 text-gray-600">{city.medianPrice}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -586,32 +800,97 @@ export default function RentalYieldCalculator({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-0.5">Annual Expenses (total)</label>
+                    <label className="block text-xs text-gray-500 mb-0.5">Council Rates</label>
                     <div className="relative">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
                       <input
                         type="number"
                         min={0}
-                        step={500}
-                        value={
-                          prop.councilRates +
-                          prop.insurance +
-                          prop.maintenance +
-                          prop.managementFees +
-                          prop.strata +
-                          prop.waterRates +
-                          prop.otherExpenses
-                        }
-                        onChange={(e) => {
-                          const total = Math.max(0, Number(e.target.value));
-                          updateCompareProperty(idx, "otherExpenses", total);
-                          updateCompareProperty(idx, "councilRates", 0);
-                          updateCompareProperty(idx, "insurance", 0);
-                          updateCompareProperty(idx, "maintenance", 0);
-                          updateCompareProperty(idx, "managementFees", 0);
-                          updateCompareProperty(idx, "strata", 0);
-                          updateCompareProperty(idx, "waterRates", 0);
-                        }}
+                        step={100}
+                        value={prop.councilRates}
+                        onChange={(e) => updateCompareProperty(idx, "councilRates", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Insurance</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={prop.insurance}
+                        onChange={(e) => updateCompareProperty(idx, "insurance", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Maintenance</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={prop.maintenance}
+                        onChange={(e) => updateCompareProperty(idx, "maintenance", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Management Fee %</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      step={0.1}
+                      value={prop.managementFeePercent}
+                      onChange={(e) => updateCompareProperty(idx, "managementFeePercent", Number(e.target.value))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Strata / Body Corp</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={prop.strata}
+                        onChange={(e) => updateCompareProperty(idx, "strata", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Water Rates</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={prop.waterRates}
+                        onChange={(e) => updateCompareProperty(idx, "waterRates", Number(e.target.value))}
+                        className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">Other Expenses</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={prop.otherExpenses}
+                        onChange={(e) => updateCompareProperty(idx, "otherExpenses", Number(e.target.value))}
                         className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
@@ -653,6 +932,9 @@ export default function RentalYieldCalculator({
                       { label: "Net Yield", key: "netYield" as const, fmt: "percent" },
                       { label: "Net Annual Income", key: "netIncome" as const, fmt: "currency" },
                       { label: "Weekly Net Income", key: "weeklyNetIncome" as const, fmt: "currency" },
+                      { label: "Monthly Loan Repayment", key: "monthlyRepayment" as const, fmt: "currency" },
+                      { label: "Annual Cash Flow", key: "annualCashFlow" as const, fmt: "currency" },
+                      { label: "Cash-on-Cash Return", key: "cashOnCash" as const, fmt: "percent" },
                     ].map((row) => {
                       const values = compareProperties.map((p) => {
                         const r = calcResults(p);
@@ -662,7 +944,7 @@ export default function RentalYieldCalculator({
                       });
 
                       // Find best yield for highlighting
-                      const yieldKeys = ["grossYield", "netYield", "netIncome", "weeklyNetIncome"];
+                      const yieldKeys = ["grossYield", "netYield", "netIncome", "weeklyNetIncome", "monthlyRepayment", "annualCashFlow", "cashOnCash"];
                       const isYieldRow = yieldKeys.includes(row.key);
                       const activeValues = values.filter((_, i) => compareProperties[i].purchasePrice > 0);
                       const bestVal = isYieldRow && activeValues.length > 1 ? Math.max(...activeValues) : null;
@@ -682,7 +964,7 @@ export default function RentalYieldCalculator({
                             const colorClass =
                               row.fmt === "percent"
                                 ? yieldColor(val)
-                                : row.key === "netIncome" || row.key === "weeklyNetIncome"
+                                : row.key === "netIncome" || row.key === "weeklyNetIncome" || row.key === "annualCashFlow"
                                   ? val >= 0
                                     ? "text-gray-900"
                                     : "text-red-600"
@@ -714,6 +996,20 @@ export default function RentalYieldCalculator({
         <h3 className="font-semibold text-gray-900 mb-3">Related Calculators</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
+            href="/calculators/mortgage-repayment"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Mortgage Repayment Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
+            href="/calculators/stamp-duty"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Stamp Duty Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
+          <Link
             href="/calculators/negative-gearing"
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
@@ -725,20 +1021,6 @@ export default function RentalYieldCalculator({
             className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
           >
             <span className="text-blue-600 font-medium">Investment Property Cash Flow Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/cgt-calculator"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Capital Gains Tax Calculator</span>
-            <span className="text-gray-400 ml-auto">&rarr;</span>
-          </Link>
-          <Link
-            href="/calculators/property-cashflow"
-            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-          >
-            <span className="text-blue-600 font-medium">Property Cash Flow Calculator</span>
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
         </div>

@@ -731,6 +731,13 @@ export default function SuperCalculator() {
             <span className="text-blue-600 font-medium">Energy Bill Calculator</span>
             <span className="text-gray-400 ml-auto">&rarr;</span>
           </Link>
+          <Link
+            href="/calculators/contractor-vs-employee"
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
+          >
+            <span className="text-blue-600 font-medium">Contractor vs Employee Calculator</span>
+            <span className="text-gray-400 ml-auto">&rarr;</span>
+          </Link>
         </div>
       </div>
 

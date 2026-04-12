@@ -4,7 +4,7 @@ import AdUnit from "../../components/AdUnit";
 
 export const metadata: Metadata = {
   title:
-    "Contractor vs Employee Tax Calculator Australia 2026 | Compare Take-Home Pay",
+    "AU Contractor vs Employee Tax Calculator 2026 — True Cost Comparison",
   description:
     "Compare take-home pay as a contractor vs employee in Australia with our 2026 tax calculator. See PAYG vs estimated tax bill, super guarantee, leave entitlements, and which arrangement puts more money in your pocket. A contractor vs employee tax calculator Australia 2026 designed to help you make informed decisions.",
   keywords: [

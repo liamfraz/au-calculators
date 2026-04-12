@@ -873,6 +873,11 @@ export default function IncomeTaxCalculator() {
               href: "/tax-withholding-calculator",
               desc: "Medicare levy & surcharge details",
             },
+            {
+              name: "Contractor vs Employee Calculator",
+              href: "/calculators/contractor-vs-employee",
+              desc: "Compare true cost: contracting vs employment",
+            },
           ].map((c) => (
             <Link
               key={c.href + c.name}
