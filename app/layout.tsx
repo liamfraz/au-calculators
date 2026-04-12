@@ -152,6 +152,12 @@ export default function RootLayout({
                 CGT
               </Link>
               <Link
+                href="/calculators/crypto-capital-gains-tax"
+                className="text-gray-600 hover:text-blue-700 transition-colors"
+              >
+                Crypto CGT
+              </Link>
+              <Link
                 href="/negative-gearing-calculator"
                 className="text-gray-600 hover:text-blue-700 transition-colors"
               >
@@ -254,6 +260,7 @@ export default function RootLayout({
                   <Link href="/calculators/hecs-help" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">HECS / HELP</Link>
                   <Link href="/calculators/super" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Super Contributions</Link>
                   <Link href="/calculators/capital-gains-tax" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Capital Gains Tax</Link>
+                  <Link href="/calculators/crypto-capital-gains-tax" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Crypto CGT</Link>
                   <Link href="/calculators/mortgage-offset" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Mortgage Offset</Link>
                   <Link href="/calculators/rental-yield" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Rental Yield</Link>
                 </div>
