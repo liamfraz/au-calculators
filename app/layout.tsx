@@ -243,7 +243,22 @@ export default function RootLayout({
 
         <footer className="border-t border-gray-200 bg-gray-50">
           <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
+              {/* Popular Calculators */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Popular Calculators</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  <Link href="/calculators/mortgage-repayment" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Mortgage Repayment</Link>
+                  <Link href="/calculators/stamp-duty" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Stamp Duty</Link>
+                  <Link href="/calculators/income-tax" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Income Tax</Link>
+                  <Link href="/calculators/hecs-help" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">HECS / HELP</Link>
+                  <Link href="/calculators/super" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Super Contributions</Link>
+                  <Link href="/calculators/capital-gains-tax" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Capital Gains Tax</Link>
+                  <Link href="/calculators/mortgage-offset" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Mortgage Offset</Link>
+                  <Link href="/calculators/rental-yield" className="text-sm text-gray-600 hover:text-blue-700 transition-colors">Rental Yield</Link>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p className="text-sm text-gray-500">
                   &copy; {new Date().getFullYear()} AU Calculators. Free financial tools for

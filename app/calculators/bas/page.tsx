@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import BasCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "BAS Calculator Australia 2026 | GST & PAYG Quarterly Statement",
@@ -149,6 +150,55 @@ export default function BasPage() {
                 <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Related Calculators */}
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Related Calculators</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/calculators/gst"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">GST Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Add or remove 10% GST from any amount</p>
+            </Link>
+            <Link
+              href="/calculators/income-tax"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Income Tax Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Calculate your annual tax and take-home pay</p>
+            </Link>
+            <Link
+              href="/calculators/contractor-vs-employee"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Contractor vs Employee</p>
+              <p className="text-gray-500 text-xs mt-1">Compare contractor and PAYG take-home pay</p>
+            </Link>
+            <Link
+              href="/salary-sacrifice-calculator"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Salary Sacrifice Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Reduce taxable income through salary packaging</p>
+            </Link>
+            <Link
+              href="/tax-withholding-calculator"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">PAYG Withholding Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Calculate tax to withhold from employee wages</p>
+            </Link>
+            <Link
+              href="/calculators/super"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Super Contributions Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Model employer and voluntary super contributions</p>
+            </Link>
           </div>
         </section>
       </div>

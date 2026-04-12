@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import StampDutyCalculator from "./calculator";
 import AdUnit from "../../components/AdUnit";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Stamp Duty Calculator Australia 2026 — All States",
@@ -141,6 +142,55 @@ export default function StampDutyPage() {
                 <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Related Calculators */}
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Related Calculators</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/calculators/mortgage-repayment"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Mortgage Repayment Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Estimate your monthly repayments after stamp duty</p>
+            </Link>
+            <Link
+              href="/calculators/first-home-buyer-concession"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">First Home Buyer Concession</p>
+              <p className="text-gray-500 text-xs mt-1">Check your stamp duty discount or exemption</p>
+            </Link>
+            <Link
+              href="/calculators/first-home-owner-grant"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">First Home Owner Grant</p>
+              <p className="text-gray-500 text-xs mt-1">See if you qualify for a state FHOG payment</p>
+            </Link>
+            <Link
+              href="/calculators/mortgage-offset"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Mortgage Offset Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Calculate interest savings with an offset account</p>
+            </Link>
+            <Link
+              href="/calculators/land-tax"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Land Tax Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Calculate annual land tax obligations by state</p>
+            </Link>
+            <Link
+              href="/calculators/rental-yield"
+              className="block p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <p className="font-semibold text-gray-900 text-sm">Rental Yield Calculator</p>
+              <p className="text-gray-500 text-xs mt-1">Assess investment return on your property</p>
+            </Link>
           </div>
         </section>
       </div>
